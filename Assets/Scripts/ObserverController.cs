@@ -49,9 +49,11 @@ public class ObserverController : MonoBehaviour
             camZoomDistance -= Input.GetAxis("Mouse ScrollWheel") * camZoomSpeed;
             camZoomDistance = Mathf.Clamp(camZoomDistance, minZoomDistance, maxZoomDistance);
 
+            // Movement inputs
             inputVertical = Input.GetAxis("Vertical");
             inputHorizontal = Input.GetAxis("Horizontal");
 
+            // Call functions to Move the observer
             ptf.Translate(Vector3.forward * inputVertical * camScrollSpeed * Time.deltaTime, Space.Self);
             ptf.Translate(Vector3.right * inputHorizontal * camScrollSpeed * Time.deltaTime, Space.Self);
         }

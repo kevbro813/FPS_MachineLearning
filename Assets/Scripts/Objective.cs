@@ -1,16 +1,24 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Objective : MonoBehaviour
 {
+    public int winners = 0;
+
+    // When an AI enters the trigger...
     private void OnTriggerStay(Collider other)
     {
+        // If the other object has the AI tag...
         if (other.gameObject.CompareTag("AI"))
-        {
+        {   
             Debug.Log("Objective Hit!");
-            other.GetComponent<AIController>().net.AddFitness(10000f);
-            Destroy(other.gameObject);       
+            int pop = GameManager.instance.populationSize; // Set pop to the population size
+
+            // Incentivize getting to objective first. 
+            // TODO: Make it logarithmic
+            float scaledFitness = GameManager.instance.objectiveReward - ((GameManager.instance.objectiveReward / pop) * winners); 
+            other.GetComponent<AIController>().net.AddFitness(scaledFitness); // Apply scaled fitness
+            Destroy(other.gameObject); // Destroy the game object     
+            winners++; // Increment winners
         }
     }
 }

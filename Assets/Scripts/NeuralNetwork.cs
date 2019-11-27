@@ -9,6 +9,8 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
     public float[][] neuronsMatrix; // Contains all the neurons, organized in layers
     public float[][][] weightsMatrix; // Contains all weights, organized by layers of neurons
     public float fitness; // Float value to track the fitness of the current network
+    public AIType aiType;
+    public enum AIType { Random, Fittest, Children, Fit, Survivor, Saved }
 
     // Neural Network Constructor
     public NeuralNetwork(int[] layers) 
@@ -83,11 +85,11 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
         }
 
         // Convert the weights list to an array once all neurons with weights have been iterated through.
-        weightsMatrix = weightsList.ToArray(); 
+        weightsMatrix = weightsList.ToArray();
     }
 
     // Calculates neuron values given a set of inputs
-    public float[] CalcNeuronValue(float[] inputs)
+    public float[] FeedForward(float[] inputs)
     {
         // Iterate through all the inputs and add them to the first layer (input layer) in the neuronsMatrix.
         for (int input = 0; input < inputs.Length; input++)
@@ -160,7 +162,42 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
             }
         }
     }
+    public void SexualReproduction(NeuralNetwork netA, NeuralNetwork netB, NeuralNetwork netC)
+    {
+        // Pass in two neural nets
+        // Iterate through all the layers.
+        for (int layer = 0; layer < netC.weightsMatrix.Length; layer++)
+        {
+            // Iterate through all the neurons.
+            for (int neuron = 0; neuron < netC.weightsMatrix[layer].Length; neuron++)
+            {
+                // Iterate through all the weights.
+                for (int weight = 0; weight < netC.weightsMatrix[layer][neuron].Length; weight++)
+                {
+                    // Create a float weight and set it to the current weight.
+                    float weightValue = netC.weightsMatrix[layer][neuron][weight];
 
+                    float randomNumber = UnityEngine.Random.Range(0f, 1000f); // Generate a random number
+
+                    // Reproduction
+                    if (randomNumber < 500) // Parent A passes on weight
+                    {
+                        Debug.Log("Passed Parent A");
+                        // Net A weight
+                        weightValue = netA.weightsMatrix[layer][neuron][weight];
+                    }
+                    else if (randomNumber <= 1000) // Parent B passes on weight
+                    {
+                        Debug.Log("Passed Parent B");
+                        // Net B weight
+                        weightValue = netB.weightsMatrix[layer][neuron][weight];
+                    }
+
+                    netC.weightsMatrix[layer][neuron][weight] = weightValue; // Set the weight
+                }
+            }
+        }
+    }
     // Creates a deep copy of the neural network
     public NeuralNetwork(NeuralNetwork copyNetwork)
     {
@@ -215,7 +252,6 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
     {
         return fitness;
     }
-
     // Sort neural networks with most fit at top
     public int CompareTo(NeuralNetwork other)
     {
@@ -227,5 +263,10 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
             return -1;
         else
             return 0;
+    }
+    // Set the AI type (Random, Survivor, Fit, Fittest)
+    public void SetType(AIType type)
+    {
+        aiType = type;
     }
 }
