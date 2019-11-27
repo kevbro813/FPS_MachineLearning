@@ -122,8 +122,8 @@ public class AIController : MonoBehaviour
     {
         if (col.gameObject.CompareTag("Obstacle"))
         {
-            //GameManager.instance.aiControllerList.Remove(this.gameObject.GetComponent<AIController>());
-            //Destroy(this.gameObject);
+            GameManager.instance.aiControllerList.Remove(this.gameObject.GetComponent<AIController>());
+            Destroy(this.gameObject);
         }
     }
     // Change color depending on AItype and proximity to objective

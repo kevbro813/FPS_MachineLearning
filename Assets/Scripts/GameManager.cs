@@ -97,13 +97,13 @@ public class GameManager : MonoBehaviour
                     
                 }
                 // (50-74%) 
-                for (int i = populationSize / 2; i < (populationSize / 4) * 3; i++)
+                for (int i = populationSize / 2; i < (populationSize / 10) * 9; i++)
                 {
                     neuralNets[i].Mutate();
                     neuralNets[i].SetType(NeuralNetwork.AIType.Fit);
                 }
-                // (75-100%) Keep the top 25% the same
-                for (int i = (populationSize / 4) * 3; i < populationSize; i++)
+                // (90-100%) Keep the top 25% the same
+                for (int i = (populationSize / 10) * 9; i < populationSize; i++)
                 {
                     neuralNets[i].SetType(NeuralNetwork.AIType.Fittest);
                 }
