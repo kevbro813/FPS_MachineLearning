@@ -22,13 +22,17 @@ public class GameManager : MonoBehaviour
     public bool isLoadingNet = false;
     public GameObject objective; // Add in inspector
     public bool isSexual;
-
+    public Transform aiShell;
     public float obstacleCollisionPenalty = -1000f;
     public float objectiveReward = 10000f;
     public float inSightReward = 100f;
     public float distanceReward = 100f;
     public float movingForwardReward = 100f;
     public float movingLateralReward = 100f;
+    public float killBoxPenalty = -1000f;
+    public float rotationPenalty = -10f;
+    public float targetDistReward = 10f;
+
     private void Awake()
     {
         // Singleton pattern
@@ -135,7 +139,7 @@ public class GameManager : MonoBehaviour
         // Loop to instantiate a generation of AI
         for (int i = 0; i < populationSize; i++)
         {
-            GameObject aiObject = Instantiate(aiObjectPrefab, spawnpoint.position, spawnpoint.rotation) as GameObject;
+            GameObject aiObject = Instantiate(aiObjectPrefab, spawnpoint.position, spawnpoint.rotation, aiShell) as GameObject;
 
             AIController controller = aiObject.GetComponent<AIController>();
 

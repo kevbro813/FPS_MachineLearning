@@ -17,11 +17,11 @@ public class AIController : MonoBehaviour
     public string aiType;
     public Transform ttf;
     public float targetDistance;
-    public float maxViewDistance = 10f;
+    public float maxViewDistance = 100f;
     public float fieldOfView = 45f;
     public float collisionDetectRange = 1f;
     public float reward;
-
+    public Vector3 lastLocation;
     void Start()
     {
         tf = GetComponent<Transform>();
@@ -29,6 +29,7 @@ public class AIController : MonoBehaviour
         distancesToObstacles = new float[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
         mats = GetComponent<MeshRenderer>().material;
         ttf = GameManager.instance.objective.GetComponent<Transform>();
+        lastLocation = GameManager.instance.spawnpoint.position;
     }
     
 
@@ -69,8 +70,8 @@ public class AIController : MonoBehaviour
             // ***Fitness Modifiers***
 
             AIVision(vectorToTarget); // Add fitness when target is in sight and as the AI moves closer
-            CollisionFitness(outputs);
-           
+            CollisionFitness(outputs); // AI will stay off the walls, but they gravitate safely around in a circle
+            DistanceTraveled(); // Makes the AI want to move more
             // Add fitness for 
             for (int input = 0; input < 2; input++)
             {
@@ -79,54 +80,36 @@ public class AIController : MonoBehaviour
         }
     }
     public void DistanceTraveled()
-    {
-        //timeInHours = (Time.smoothDeltaTime / 60) / 60;
-        //totalDistance += speed * timeInHours;
+    { 
+        float distanceFromSpawn = Vector3.Distance(tf.position, GameManager.instance.spawnpoint.position);
+        net.AddFitness(GameManager.instance.distanceReward * distanceFromSpawn);
+        float dt = Vector3.Distance(lastLocation, tf.position);
+        net.AddFitness(GameManager.instance.distanceReward * dt);
+        lastLocation = tf.position;
     }
     public void CollisionFitness(float[] outputs)
     {
         // Add fitness when AI is moving forward unobstructed
-        if (outputs[0] > 0 && distancesToObstacles[0] == 0)
+        if (outputs[0] < 0 && distancesToObstacles[0] == 0)
         {
             net.AddFitness(GameManager.instance.movingForwardReward);
         }
-
+        for (int i = 0; i < distancesToObstacles.Length; i++)
+        {
+            if (distancesToObstacles[i] > 0)
+            {
+                net.AddFitness(GameManager.instance.obstacleCollisionPenalty);
+            }
+        }
+        if (outputs[2] > 0)
+        {
+            net.AddFitness(GameManager.instance.rotationPenalty);
+        }
         // Add fitness when the AI is moving laterally
         //if (outputs[1] > 0)
         //{
         //    net.AddFitness(GameManager.instance.movingLateralReward);
         //}
-
-        // Reduce fitness when AI is moving forward into an obstacle
-        if (outputs[0] > 0 && distancesToObstacles[0] > 0)
-        {
-            net.AddFitness(GameManager.instance.obstacleCollisionPenalty);
-        }
-        // Reduce fitness when AI is moving backward into an obstacle
-        if (outputs[0] < 0 && distancesToObstacles[4] > 0)
-        {
-            net.AddFitness(GameManager.instance.obstacleCollisionPenalty);
-        }
-        // Reduce fitness when AI is strafing left into obstacle
-        if (outputs[1] < 0 && distancesToObstacles[6] > 0)
-        {
-            net.AddFitness(GameManager.instance.obstacleCollisionPenalty);
-        }
-        // Reduce fitness when AI is strafing right into obstacle
-        if (outputs[1] > 0 && distancesToObstacles[2] > 0)
-        {
-            net.AddFitness(GameManager.instance.obstacleCollisionPenalty);
-        }
-        // Stuck in corner penalty (Right)
-        if (distancesToObstacles[1] > 0 && distancesToObstacles[2] > 0 && distancesToObstacles[3] > 0)
-        {
-            net.AddFitness(2 * GameManager.instance.obstacleCollisionPenalty);
-        }
-        // Stuck in corner penalty (Left)
-        if (distancesToObstacles[7] > 0 && distancesToObstacles[6] > 0 && distancesToObstacles[5] > 0)
-        {
-            net.AddFitness(2 * GameManager.instance.obstacleCollisionPenalty);
-        }
     }
     // Initialize the neural network for this AI
     public void Init(NeuralNetwork net)
@@ -149,7 +132,7 @@ public class AIController : MonoBehaviour
         float dist = Vector3.Distance(tf.position, GameManager.instance.objective.GetComponent<Transform>().position);
         if (net.aiType == NeuralNetwork.AIType.Fittest)
         {
-            mats.color = new Color((1 - 0.2f), 0, 0); // Red are the most fit
+            mats.color = new Color((1 - 0.2f), 0, 0); // Red are the fittest
             if (dist < 20f)
             {
                 mats.color = new Color(((20f / dist) - 0.2f), 0, 0); // Brighten when close to objective
@@ -257,9 +240,9 @@ public class AIController : MonoBehaviour
             {
                 if (hit.collider.CompareTag("Objective"))
                 {
-                    reward = GameManager.instance.distanceReward * (targetDistance/maxViewDistance); // Applies a bigger reward the closer to the target
+                    reward = GameManager.instance.targetDistReward * (targetDistance/maxViewDistance); // Applies a bigger reward the closer to the target
                     net.AddFitness(reward);
-                    //Debug.DrawRay(tf.position, vectorToTarget * maxViewDistance, Color.red);
+                    Debug.DrawRay(tf.position, vectorToTarget * maxViewDistance, Color.red);
                     net.AddFitness(GameManager.instance.inSightReward); // Applies a reward when the target is in sight
                 }
             }
