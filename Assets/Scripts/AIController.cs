@@ -22,6 +22,8 @@ public class AIController : MonoBehaviour
     public float collisionDetectRange = 1f;
     public float reward;
     public Vector3 lastLocation;
+    public string aiState = "patrol";
+
     void Start()
     {
         tf = GetComponent<Transform>();
@@ -31,8 +33,38 @@ public class AIController : MonoBehaviour
         ttf = GameManager.instance.objective.GetComponent<Transform>();
         lastLocation = GameManager.instance.spawnpoint.position;
     }
-    
 
+    private void Update()
+    {
+        if (aiState == "patrol")
+        {
+            // The AI Wanders around looking for a target
+        }
+        if (aiState == "alert")
+        {
+            // The AI sees the enemy
+        }
+        if (aiState == "obstacle")
+        {
+            // The AI encounters an obstacle
+        }
+        if (aiState == "threat")
+        {
+            // The AI is attacked without seeing the enemy
+        }
+        if (aiState == "cover")
+        {
+            // The AI is behind cover while being attacked
+        }
+        if (aiState == "advance")
+        {
+            // The AI can advance to the next cover
+        }
+        if (aiState == "attack")
+        {
+            // The AI attacks the enemy
+        }
+    }
     // Update is called once per frame
     void FixedUpdate()
     {
@@ -49,6 +81,7 @@ public class AIController : MonoBehaviour
             // First two are angles to target
             inputs[0] = GetTargetInput(vectorToTarget.x, vectorToTarget.z);
             inputs[1] = GetTargetInput(vectorToTarget.z, vectorToTarget.x);
+
             // Raycasts in the 8 compass points around the AI to detect when it is running into an obstacle
             inputs[2] = distancesToObstacles[0];
             inputs[3] = distancesToObstacles[1];
@@ -58,6 +91,15 @@ public class AIController : MonoBehaviour
             inputs[7] = distancesToObstacles[5];
             inputs[8] = distancesToObstacles[6];
             inputs[9] = distancesToObstacles[7];
+
+            // ***Possible inputs
+            // Distance to target (while in sight)
+            // Health
+            // Cover objects in sight
+            // Enemy location (while in sight)
+            // The direction the enemy is facing if sighted
+            // Current AI state
+
 
             // Pass inputs to feed forward function to produce outputs
             float[] outputs = net.FeedForward(inputs);
@@ -72,6 +114,7 @@ public class AIController : MonoBehaviour
             AIVision(vectorToTarget); // Add fitness when target is in sight and as the AI moves closer
             CollisionFitness(outputs); // AI will stay off the walls, but they gravitate safely around in a circle
             DistanceTraveled(); // Makes the AI want to move more
+
             // Add fitness for 
             for (int input = 0; input < 2; input++)
             {
@@ -81,8 +124,11 @@ public class AIController : MonoBehaviour
     }
     public void DistanceTraveled()
     { 
+        // Incentivize moving as far away from spawnpoint as possible
         float distanceFromSpawn = Vector3.Distance(tf.position, GameManager.instance.spawnpoint.position);
         net.AddFitness(GameManager.instance.distanceReward * distanceFromSpawn);
+
+        // Incentivize moving as much as possible
         float dt = Vector3.Distance(lastLocation, tf.position);
         net.AddFitness(GameManager.instance.distanceReward * dt);
         lastLocation = tf.position;
@@ -120,11 +166,11 @@ public class AIController : MonoBehaviour
     // Collision detection with obstacles
     private void OnCollisionEnter(Collision col)
     {
-        if (col.gameObject.CompareTag("Obstacle"))
-        {
-            GameManager.instance.aiControllerList.Remove(this.gameObject.GetComponent<AIController>());
-            Destroy(this.gameObject);
-        }
+        //if (col.gameObject.CompareTag("Obstacle"))
+        //{
+        //    GameManager.instance.aiControllerList.Remove(this.gameObject.GetComponent<AIController>());
+        //    Destroy(this.gameObject);
+        //}
     }
     // Change color depending on AItype and proximity to objective
     public void ColorChange()

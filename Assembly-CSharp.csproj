@@ -70,8 +70,11 @@
     <Compile Include="Assets\Scripts\NeuralNetwork.cs" />
     <Compile Include="Assets\Scripts\Objective.cs" />
     <Compile Include="Assets\Scripts\ObserverController.cs" />
+    <Compile Include="Assets\Scripts\Reinforcement\Agent.cs" />
+    <Compile Include="Assets\Scripts\Reinforcement\DQN.cs" />
+    <Compile Include="Assets\Scripts\Reinforcement\Environment.cs" />
+    <Compile Include="Assets\Scripts\Reinforcement\RLComponent.cs" />
     <Compile Include="Assets\Scripts\SaveLoad.cs" />
-    <Compile Include="Assets\Scripts\TestCode.cs" />
     <Compile Include="Assets\Scripts\UIManager.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>E:/Unity Projects/Game AI/FPS_MachineLearning/FPS_MachineLearning/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>

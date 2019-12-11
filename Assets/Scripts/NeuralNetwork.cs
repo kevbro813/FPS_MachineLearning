@@ -180,7 +180,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
                     float randomNumber = UnityEngine.Random.Range(0f, 1000f); // Generate a random number
 
                     // Reproduction
-                    if (randomNumber < 500) // Parent A passes on weight
+                    if (randomNumber < 900) // Parent A passes on weight
                     {
                         Debug.Log("Passed Parent A");
                         // Net A weight
