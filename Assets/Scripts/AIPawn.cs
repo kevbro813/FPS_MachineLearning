@@ -11,13 +11,21 @@ public class AIPawn : MonoBehaviour
     {
         tf = GetComponent<Transform>(); 
     }
-    public void ForwardBackMovement(float inputVertical)
+    public void MoveForward(float input)
     {
-        tf.Translate((tf.forward * inputVertical * moveSpeed * Time.deltaTime), Space.Self);
+        tf.Translate((tf.forward * input * moveSpeed * Time.deltaTime), Space.Self);
     }
-    public void LateralMovement(float inputHorizontal)
+    public void MoveBack(float input)
     {
-        tf.Translate((tf.right * inputHorizontal * moveSpeed * Time.deltaTime), Space.Self);
+        tf.Translate((-tf.forward * input * moveSpeed * Time.deltaTime), Space.Self);
+    }
+    public void MoveRight(float input)
+    {
+        tf.Translate((tf.right * input * moveSpeed * Time.deltaTime), Space.Self);
+    }
+    public void MoveLeft(float input)
+    {
+        tf.Translate((-tf.right * input * moveSpeed * Time.deltaTime), Space.Self);
     }
     public void Rotation(float inputRotation)
     {

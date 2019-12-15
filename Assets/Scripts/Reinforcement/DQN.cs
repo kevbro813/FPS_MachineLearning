@@ -12,21 +12,21 @@ public class DQN : MonoBehaviour
     public int episodeMax = 10;
     public Environment env;
     public Agent agent;
-    public int[] mLayers = new int[] { 10, 10, 10, 3 };
-    public int[] tLayers = new int[] { 10, 10, 10, 3 };
-    public float[][] frames;
-
+    private int[] mLayers = new int[] { 50, 80, 50, 5 };
+    private int[] tLayers = new int[] { 50, 80, 50, 5 };
+    public int inputsPerState;
 
     private void Start()
     {
         agent = GetComponent<Agent>();
         env = GetComponent<Environment>();
+        inputsPerState = 10 * 5; // TODO: When you are done being lazy, make it two variables or const for input and frames per state
     }
     private void Update()
     {
         RunGame();
     }
-    public void InitAINeuralNets()
+    public void InitQNets()
     {
         NeuralNetwork mNet = new NeuralNetwork(mLayers);
         mNet.Mutate();
@@ -51,11 +51,12 @@ public class DQN : MonoBehaviour
     }
     public void RunGame()
     {
+        InitQNets();
         for (int i = 1; i <= episodeMax; i++) // For each episode...
         {
             episodeCount = i; // Increase episode count. Will be used for display
-            float reward = RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
-            //rewards.Add(score); // Add the score to the list of reward scores. TODO: Sort functionality, Icomparable.
+            float episodeReward = RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
+            //rewards.Add(reward); // Add the score to the list of reward scores. TODO: Sort functionality, Icomparable.
 
             // TODO: Save rewards file
         }
@@ -64,26 +65,38 @@ public class DQN : MonoBehaviour
     public float RunEpisode(Agent agent, Environment env)
     {
         // Reset the environment's state each episode
-        env.ResetEnv();     
+        env.ResetEnv();    
+        
+        // TODO: Create initial state
 
         bool isDone = false;
         while (!isDone)
         {
-            env.normalizedStates = NormalizeState(env.stateMeans, env.states, env.stateCounter, env.stateVariance, env.stateStdDev);
+            // Get state from fram buffer
+            float[] currentState = env.GetState(env.frameBuffer);
 
-            env.stateCounter++; // Where should this increment go?
+            // Input the state and return an action
+            float[] currentAction = agent.GetAction(currentState);
 
-            // Select an action using the main neural network
-            float[] actions = agent.GetAction(env.normalizedStates);
+            // Perform the action
+            agent.PerformAction(currentAction);
 
-            // Perform action, calculate next state, calculate reward
-            env.Step(actions);
+            // Creates next frame
+            float[] nextFrame = env.GetNextFrame();
+
+            // Add frame to frame buffer
+            env.frameBuffer = env.UpdateFrameBuffer(nextFrame);
+
+            // Calculates the reward based on the state
+            float currentReward = env.CalculateReward();
 
             // Update experience replay memory
-            ExperienceReplay();
+            agent.ExperienceReplay(env.frameBuffer, currentAction, currentReward);
 
-            // Train the model
-            Learn();
+            env.stateCounter++;
+
+            // Train the agent
+            isDone = agent.Train(agent.experienceBuffer);
 
             // Copy weights from main to target network periodically
             if (env.stateCounter % 100 == 0)
@@ -93,83 +106,6 @@ public class DQN : MonoBehaviour
 
             isDone = true;
         }
-        return 0;
-    }
-    public void ExperienceReplay()
-    {
-        // Buffer that stores (s, a, r, s') 4-tuples
-        // state buffer is a buffer of x number of frames
-        //frames[][]; // Frames rotate and fill in a loop. Need to prevent using end/beginning frames in the same state
-        //actions[][];
-        //rewards[][];
-    }
-    public void Learn()
-    {
-        // Train the model using a neural network (states form inputs)
-
-    }
-
-    // Scalar function used to normalize all input values that make up a state
-    public float[] NormalizeState(float[] means, float[] states, float counter, float[] variances, float[] stdDevs)
-    {
-        float[] normalizedStates = new float[states.Length];
-
-        // Iterate scalar function through each state input
-        for (int i = 0; i < states.Length; i++)
-        {
-            // Update the mean with the new datapoint
-            means[i] = UpdateMean(counter, means[i], states[i]);
-
-            // Calculate the squared difference for the new datapoint
-            float sqrdDiff = SquaredDifference(states[i], means[i]);
-
-            // Calculate total squared difference from variance
-            float totalSqrdDiff = variances[i] * counter;
-
-            // Update the total squared difference
-            totalSqrdDiff += sqrdDiff;
-
-            counter++; // TODO: Need to move this. It should only update once per tick, not once per 
-
-            // Recalculate Variance and Standard Deviation
-            variances[i] = Variance(totalSqrdDiff, counter);
-            stdDevs[i] = StdDeviation(variances[i]);
-
-            // Normalize the current state values
-            normalizedStates[i] = ScalarFunction(states[i], means[i], stdDevs[i]);
-        }
-
-        return normalizedStates;
-    }
-    public float ScalarFunction(float dp, float mean, float stdDev)
-    {
-        // Calculate a state's Z-score = (data point - mean) / standard deviation
-        float zScore = (dp - mean) / stdDev;
-
-        return zScore;
-    }
-    public float UpdateMean(float sampleSize, float mean, float dp)
-    {
-        float sampleTotal = sampleSize * mean;
-        sampleTotal += dp;
-        sampleSize++;
-        mean = sampleTotal / sampleSize;
-
-        return mean;
-    }
-    public float SquaredDifference(float dp, float mean)
-    {
-        float sqrdDiff = Mathf.Pow(dp - mean, 2);
-        return sqrdDiff;
-    }
-    public float Variance(float totalSqrdDiff, float stateCounter)
-    {
-        float variance = totalSqrdDiff / stateCounter;
-        return variance;
-    }
-    public float StdDeviation(float variance)
-    {
-        float stdDev = Mathf.Sqrt(variance);
-        return stdDev;
+        return 0; // Need to return the reward total for the episode
     }
 }

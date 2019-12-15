@@ -73,7 +73,6 @@
     <Compile Include="Assets\Scripts\Reinforcement\Agent.cs" />
     <Compile Include="Assets\Scripts\Reinforcement\DQN.cs" />
     <Compile Include="Assets\Scripts\Reinforcement\Environment.cs" />
-    <Compile Include="Assets\Scripts\Reinforcement\RLComponent.cs" />
     <Compile Include="Assets\Scripts\SaveLoad.cs" />
     <Compile Include="Assets\Scripts\UIManager.cs" />
     <Reference Include="Unity.Timeline.Editor">

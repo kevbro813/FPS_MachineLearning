@@ -105,9 +105,11 @@ public class AIController : MonoBehaviour
             float[] outputs = net.FeedForward(inputs);
 
             // Output values passed to aiPawn functions
-            aiPawn.ForwardBackMovement(outputs[0]);
-            aiPawn.LateralMovement(outputs[1]);
-            aiPawn.Rotation(outputs[2]);
+            aiPawn.MoveForward(outputs[0]);
+            aiPawn.MoveBack(outputs[1]);
+            aiPawn.MoveRight(outputs[2]);
+            aiPawn.MoveLeft(outputs[3]);
+            aiPawn.Rotation(outputs[4]);
 
             // ***Fitness Modifiers***
 

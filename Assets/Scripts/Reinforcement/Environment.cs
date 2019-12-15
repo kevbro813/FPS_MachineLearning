@@ -4,16 +4,21 @@ using UnityEngine;
 
 public class Environment : MonoBehaviour
 {
-    public float[] states;
-    public float[] stateMeans;
-    public float[] stateVariance;
-    public float[] stateStdDev;
-    public float[] normalizedStates;
+    //*** For testing normalizing functions
+    //public float[] states;
+    //public float[] stateMeans;
+    //public float[] stateVariance;
+    //public float[] stateStdDev;
+    //public float[] normalizedStates;
 
+    // Required for DQN
+    public const int FRAMES_PER_STATE = 5; // The number of frames per state
+    public const int FRAME_SIZE = 10;
+    public float stateCounter = 0;
+
+    public int frameBufferSize;
+    public float[] frameBuffer;
     public float[] rewards;
-
-    public const int INPUT_QTY = 10;
-    public float stateCounter = 1;
 
     public bool initialized = false;
     private AIPawn aiPawn;
@@ -30,84 +35,104 @@ public class Environment : MonoBehaviour
     public float maxViewDistance = 100f;
     public float fieldOfView = 45f;
     public float collisionDetectRange = 1f;
-    public float reward;
+    public float[] reward;
     public Vector3 lastLocation;
+    public DQN dqn;
 
     private void Start()
     {
         tf = GetComponent<Transform>();
-        aiPawn = GetComponent<AIPawn>();
-        distancesToObstacles = new float[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
+        aiPawn = GetComponent<AIPawn>();      
         mats = GetComponent<MeshRenderer>().material;
         ttf = GameManager.instance.objective.GetComponent<Transform>();
         lastLocation = GameManager.instance.spawnpoint.position;
-
+        dqn = GetComponent<DQN>();
         InitEnv();
+        frameBufferSize = (FRAME_SIZE * FRAMES_PER_STATE) + FRAME_SIZE;
     }
     public void InitEnv()
     {
         initialized = true;
         // Create the environment
-        states = new float[INPUT_QTY];
-        stateMeans = new float[INPUT_QTY];
-        stateVariance = new float[INPUT_QTY];
-        stateStdDev = new float[INPUT_QTY];
-        normalizedStates = new float[INPUT_QTY];
+        distancesToObstacles = new float[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
+        stateCounter = 0;
     }
     public void ResetEnv()
     {
         // Create the environment
-        states = new float[INPUT_QTY];
-        stateMeans = new float[INPUT_QTY];
-        stateVariance = new float[INPUT_QTY];
-        stateStdDev = new float[INPUT_QTY];
-        normalizedStates = new float[INPUT_QTY];
-
         // TODO: Restart game
     }
-    public void Step(float[] actions)
+    public float[] UpdateFrameBuffer(float[] nf)
     {
-        // Take in an action and perform it.
-        // Make next state (Append next frame to state to get next state for next iteration of the loop)
-        // Calculate the reward
-        // isDone = true;
-    }
+        List<float> fb = new List<float>();
 
-    // Update is called once per frame
-    void FixedUpdate()
-    {
-        if (initialized == true)
+        for (int i = 0; i < frameBufferSize; i++)
         {
-            CollisionDetection();
-
-            // Raycasts in the 8 compass points around the AI to detect when it is running into an obstacle
-            states[0] = distancesToObstacles[0];
-            states[1] = distancesToObstacles[1];
-            states[2] = distancesToObstacles[2];
-            states[3] = distancesToObstacles[3];
-            states[4] = distancesToObstacles[4];
-            states[5] = distancesToObstacles[5];
-            states[6] = distancesToObstacles[6];
-            states[7] = distancesToObstacles[7];
-            states[8] = 0;
-            states[9] = 0;
-
-            // ***Possible inputs
-            // Distance to target (while in sight)
-            // Health
-            // Cover objects in sight
-            // Enemy location (while in sight)
-            // The direction the enemy is facing if sighted
-            // Current AI state
-
-            // Pass inputs to feed forward function to produce outputs
-            float[] outputs = net.FeedForward(normalizedStates);
-
-            // Output values passed to aiPawn functions
-            aiPawn.ForwardBackMovement(outputs[0]);
-            aiPawn.LateralMovement(outputs[1]);
-            aiPawn.Rotation(outputs[2]);
+            fb.Add(frameBuffer[i + FRAME_SIZE]);
         }
+        for(int i = 0; i < FRAME_SIZE; i++)
+        {
+            fb.Add(nf[i]);
+        }
+
+        return fb.ToArray();
+    }
+    public float[] GetNextFrame()
+    {
+        // Make next state (Append next frame to state to get next state for next iteration of the loop)
+        CollisionDetection();
+
+        float[] next_Frame = new float[FRAME_SIZE];
+
+        // Raycasts in the 8 compass points around the AI to detect when it is running into an obstacle
+        next_Frame[0] = distancesToObstacles[0];
+        next_Frame[1] = distancesToObstacles[1];
+        next_Frame[2] = distancesToObstacles[2];
+        next_Frame[3] = distancesToObstacles[3];
+        next_Frame[4] = distancesToObstacles[4];
+        next_Frame[5] = distancesToObstacles[5];
+        next_Frame[6] = distancesToObstacles[6];
+        next_Frame[7] = distancesToObstacles[7];
+        next_Frame[8] = 0;
+        next_Frame[9] = 0;
+
+        // ***Possible inputs
+        // Distance to target (while in sight)
+        // Health
+        // Cover objects in sight
+        // Enemy location (while in sight)
+        // The direction the enemy is facing if sighted
+        // Current AI state
+
+        return next_Frame;
+    }
+    public float[] GetState(float[] buffer)
+    {
+        float[] state = new float[FRAME_SIZE * FRAMES_PER_STATE];
+
+        for(int i = 0; i < (FRAME_SIZE * FRAMES_PER_STATE) - FRAME_SIZE; i++)
+        {
+            state[i] = buffer[i];
+        }
+
+        return state;  
+    }
+    public float[] GetNextState(float[] buffer)
+    {
+        float[] nState = new float[FRAME_SIZE * FRAMES_PER_STATE];
+
+        for (int i = FRAME_SIZE; i < (FRAME_SIZE * FRAMES_PER_STATE) + FRAME_SIZE; i++)
+        {
+            nState[i] = buffer[i];
+        }
+
+        return nState;
+    }
+    public float CalculateReward()
+    {
+        float reward = 0;
+        // Calculate the reward
+        return reward;
     }
     // Collision Detection Algorithm (Experimental)
     private void CollisionDetection()
@@ -170,12 +195,73 @@ public class Environment : MonoBehaviour
             {
                 if (hit.collider.CompareTag("Objective"))
                 {
-                    reward = GameManager.instance.targetDistReward * (targetDistance / maxViewDistance); // Applies a bigger reward the closer to the target
-                    net.AddFitness(reward);
-                    Debug.DrawRay(tf.position, vectorToTarget * maxViewDistance, Color.red);
-                    net.AddFitness(GameManager.instance.inSightReward); // Applies a reward when the target is in sight
+                    // boolean to indicate objective is sighted (state input)
+                    // angleToTarget (state input)
                 }
             }
         }
+    }
+    // Scalar function used to normalize all input values that make up a state
+    public float[] NormalizeState(float[] means, float[] states, float counter, float[] variances, float[] stdDevs) // TODO: Should be normalize frame, need to change all states array to frame 
+    {
+        float[] normalizedStates = new float[states.Length];
+
+        // Iterate scalar function through each state input
+        for (int i = 0; i < states.Length; i++)
+        {
+            // Update the mean with the new datapoint
+            means[i] = UpdateMean(counter, means[i], states[i]);
+
+            // Calculate the squared difference for the new datapoint
+            float sqrdDiff = SquaredDifference(states[i], means[i]);
+
+            // Calculate total squared difference from variance
+            float totalSqrdDiff = variances[i] * counter;
+
+            // Update the total squared difference
+            totalSqrdDiff += sqrdDiff;
+
+            counter++; // TODO: Need to move this. It should only update once per tick, not once per 
+
+            // Recalculate Variance and Standard Deviation
+            variances[i] = Variance(totalSqrdDiff, counter);
+            stdDevs[i] = StdDeviation(variances[i]);
+
+            // Normalize the current state values
+            normalizedStates[i] = ScalarFunction(states[i], means[i], stdDevs[i]);
+        }
+
+        return normalizedStates;
+    }
+    public float ScalarFunction(float dp, float mean, float stdDev)
+    {
+        // Calculate a state's Z-score = (data point - mean) / standard deviation
+        float zScore = (dp - mean) / stdDev;
+
+        return zScore;
+    }
+    public float UpdateMean(float sampleSize, float mean, float dp)
+    {
+        float sampleTotal = sampleSize * mean;
+        sampleTotal += dp;
+        sampleSize++;
+        mean = sampleTotal / sampleSize;
+
+        return mean;
+    }
+    public float SquaredDifference(float dp, float mean)
+    {
+        float sqrdDiff = Mathf.Pow(dp - mean, 2);
+        return sqrdDiff;
+    }
+    public float Variance(float totalSqrdDiff, float stateCounter)
+    {
+        float variance = totalSqrdDiff / stateCounter;
+        return variance;
+    }
+    public float StdDeviation(float variance)
+    {
+        float stdDev = Mathf.Sqrt(variance);
+        return stdDev;
     }
 }
