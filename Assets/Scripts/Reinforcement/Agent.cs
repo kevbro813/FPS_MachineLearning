@@ -12,6 +12,7 @@ public class Agent : MonoBehaviour
     public int bufferIndex = 0;
     public const int EXP_BUFFER_SIZE = 10000;
     public int actionQty;
+    public const int MINI_BATCH_SIZE = 32;
 
     private void Start()
     {   
@@ -33,18 +34,38 @@ public class Agent : MonoBehaviour
         experienceBuffer = new float[EXP_BUFFER_SIZE][][];
         bufferIndex = 0;
     }
+    public float[] DetermineAction()
+    {
+        // Function similar to np.argmax in python. Except, rather than returning the argmax for all actions,
+        // this function will return the argmax between movement pairs (forward/reverse, right/left, rotateRight/rotateLeft)
+        // This way the agent can have simultaneous movements, but it will not allow the agent to move forward and reverse at the same time
+        // Also need to add "stop" states for all 3 movement pairs. Possibly make it so if both values are similar (within 0.x of each other)
+        // then the movement pairs will cancel each other out and the agent will not move. Need to also make the movements binary rather than a
+        // variable that alters the speed. Basically, all actions should be binary.
+        float[] dAction = new float[5]; // Create a new float array to hold the action values
+
+        return dAction;
+    }
+
+    // Create a random action
+    public float[] RandomAction()
+    {
+        float[] randAction = new float[5]; // Create a new float array to hold the action values
+
+        return randAction;
+    }
+
+    // Get an action based on state, or small chance (epsilon) for a random action
     public float[] GetAction(float[] state, float eps) // States are passed to neural network and returns action
     {
-        // Small probability for a random action based on epsilon, exploit/explore
+        // Small probability for a random action based on epsilon, exploration/exploitation
         if(UnityEngine.Random.value < eps) // Random value needs to match np.random.random() - returns a half-open interval [0.0, 1.0)
         {
             // Random action
             // return random.choice(self.K) - return a random element from the 1-D array
             //int rand = UnityEngine.Random.Range(0, 5); // Range must match *Remember inclusive/exclusive
-            // Create random action
-            float[] randAction = new float[5]; // Create a new float array to hold the action values
 
-            return null;
+            return RandomAction();
         }
         else
         {
@@ -87,7 +108,7 @@ public class Agent : MonoBehaviour
     public bool Train(float[][][] expBuffer) // State, action, reward, next state, isDone are passed in
     {
         // Get a random batch from the experience buffer
-
+        float[][][] miniBatch = GetMiniBatch(expBuffer);
         // Calculate targets      
         //next_Qs = target_model.predict(next_states)
         //next_Q = np.amax(next_Qs, axis = 1) - Returns an array containing the max value for each row
@@ -100,5 +121,11 @@ public class Agent : MonoBehaviour
 
         return true;        
     }
+    public float[][][] GetMiniBatch(float[][][] expBuffer)
+    {
+        float[][][] miniBatch = new float[MINI_BATCH_SIZE][][];
+        // Take a random sample from expBuffer and add it to the miniBatch
 
+        return miniBatch;
+    }
 }

@@ -133,6 +133,7 @@ public class Environment : MonoBehaviour
         // TODO: Calculate the reward
         float reward = 0;
 
+
         return reward;
     }
     // Collision Detection Algorithm (Experimental)
