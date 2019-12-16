@@ -22,7 +22,7 @@ public class Environment : MonoBehaviour
 
     public bool initialized = false;
     private AIPawn aiPawn;
-    public NeuralNetwork net;
+    
     private Material mats;
     private Transform tf;
     public float distance = 5.0f;
@@ -130,8 +130,9 @@ public class Environment : MonoBehaviour
     }
     public float CalculateReward()
     {
+        // TODO: Calculate the reward
         float reward = 0;
-        // Calculate the reward
+
         return reward;
     }
     // Collision Detection Algorithm (Experimental)

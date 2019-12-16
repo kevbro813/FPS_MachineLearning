@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class Agent : MonoBehaviour
 {
@@ -10,13 +11,21 @@ public class Agent : MonoBehaviour
     public float[][][] experienceBuffer;
     public int bufferIndex = 0;
     public const int EXP_BUFFER_SIZE = 10000;
+    public int actionQty;
 
     private void Start()
-    {
+    {   
         env = GetComponent<Environment>();
         aiPawn = GetComponent<AIPawn>();
         dqn = GetComponent<DQN>();
         InitAgent();
+        int seed = DateToInt(DateTime.Now);
+        UnityEngine.Random.InitState(seed);
+        
+    }
+    public int DateToInt(DateTime dateTime)
+    {
+        return dateTime.Year + dateTime.Month + dateTime.Day + dateTime.Hour + dateTime.Minute + dateTime.Second + dateTime.Millisecond;
     }
     public void InitAgent()
     {
@@ -24,10 +33,25 @@ public class Agent : MonoBehaviour
         experienceBuffer = new float[EXP_BUFFER_SIZE][][];
         bufferIndex = 0;
     }
-    public float[] GetAction(float[] state) // States are passed to neural network and returns action
+    public float[] GetAction(float[] state, float eps) // States are passed to neural network and returns action
     {
-        float[] actions = dqn.mainNet.FeedForward(state);
-        return actions;
+        // Small probability for a random action based on epsilon, exploit/explore
+        if(UnityEngine.Random.value < eps) // Random value needs to match np.random.random() - returns a half-open interval [0.0, 1.0)
+        {
+            // Random action
+            // return random.choice(self.K) - return a random element from the 1-D array
+            //int rand = UnityEngine.Random.Range(0, 5); // Range must match *Remember inclusive/exclusive
+            // Create random action
+            float[] randAction = new float[5]; // Create a new float array to hold the action values
+
+            return null;
+        }
+        else
+        {
+            // Action via neural net
+            //return np.argmax(self.predict([x])[0]) - return the highest
+            return dqn.mainNet.FeedForward(state);
+        }
     }
 
     public void ExperienceReplay(float[] frameBuffer, float[] action, float reward)
@@ -50,7 +74,6 @@ public class Agent : MonoBehaviour
         }
 
         bufferIndex++;
-
     }
     public void PerformAction(float[] action)
     {
@@ -63,12 +86,18 @@ public class Agent : MonoBehaviour
     }
     public bool Train(float[][][] expBuffer) // State, action, reward, next state, isDone are passed in
     {
-        // Train the model using a neural network (states form inputs)
-        //dqn.targetNet.FeedForward(state);
-        // Input = s
-        // if (isDone) then target = r
-        // else  target = r + gamma * max {Q (s',:)}
-        // Then use gradient descent with momentum with the target for the state
+        // Get a random batch from the experience buffer
+
+        // Calculate targets      
+        //next_Qs = target_model.predict(next_states)
+        //next_Q = np.amax(next_Qs, axis = 1) - Returns an array containing the max value for each row
+        //targets = rewards + np.invert(dones).astype(np.float32) * gamma * next_Q
+
+        // Update model
+        //loss = model.update(states, actions, targets)
+        //return loss
+
+
         return true;        
     }
 

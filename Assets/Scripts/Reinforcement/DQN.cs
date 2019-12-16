@@ -15,12 +15,15 @@ public class DQN : MonoBehaviour
     private int[] mLayers = new int[] { 50, 80, 50, 5 };
     private int[] tLayers = new int[] { 50, 80, 50, 5 };
     public int inputsPerState;
-
+    public float epsilon = 1.0f;
+    public float epsilon_min = 0.1f;
+    public float epsilon_change;
     private void Start()
     {
         agent = GetComponent<Agent>();
         env = GetComponent<Environment>();
         inputsPerState = 10 * 5; // TODO: When you are done being lazy, make it two variables or const for input and frames per state
+        epsilon_change = (epsilon - epsilon_min) / 500000;
     }
     private void Update()
     {
@@ -58,9 +61,10 @@ public class DQN : MonoBehaviour
             float episodeReward = RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
             //rewards.Add(reward); // Add the score to the list of reward scores. TODO: Sort functionality, Icomparable.
 
-            // TODO: Save rewards file
+            // TODO: Save Episodes
         }
     }
+
     // Run one episode
     public float RunEpisode(Agent agent, Environment env)
     {
@@ -72,39 +76,51 @@ public class DQN : MonoBehaviour
         bool isDone = false;
         while (!isDone)
         {
-            // Get state from fram buffer
-            float[] currentState = env.GetState(env.frameBuffer);
-
-            // Input the state and return an action
-            float[] currentAction = agent.GetAction(currentState);
-
-            // Perform the action
-            agent.PerformAction(currentAction);
-
-            // Creates next frame
-            float[] nextFrame = env.GetNextFrame();
-
-            // Add frame to frame buffer
-            env.frameBuffer = env.UpdateFrameBuffer(nextFrame);
-
-            // Calculates the reward based on the state
-            float currentReward = env.CalculateReward();
-
-            // Update experience replay memory
-            agent.ExperienceReplay(env.frameBuffer, currentAction, currentReward);
-
-            env.stateCounter++;
-
-            // Train the agent
-            isDone = agent.Train(agent.experienceBuffer);
-
             // Copy weights from main to target network periodically
             if (env.stateCounter % 100 == 0)
             {
                 targetNet = mainNet;
             }
 
-            isDone = true;
+            // Get state from fram buffer
+            float[] currentState = env.GetState(env.frameBuffer); // **DONE
+
+            // Input the state and return an action
+            float[] currentAction = agent.GetAction(currentState, epsilon);
+
+            // Perform the action
+            agent.PerformAction(currentAction); // **DONE
+
+            // Creates next frame
+            float[] nextFrame = env.GetNextFrame(); // **NONE
+
+            // Add frame to frame buffer
+            env.frameBuffer = env.UpdateFrameBuffer(nextFrame); // **DONE
+
+            // Calculates the reward based on the state
+            float currentReward = env.CalculateReward();
+
+            // Update experience replay memory
+            agent.ExperienceReplay(env.frameBuffer, currentAction, currentReward); // **DONE
+
+            env.stateCounter++;
+
+            // Train the agent
+            isDone = agent.Train(agent.experienceBuffer);
+
+            // Keep track of time
+
+            // Track training time
+
+            // Increment steps in episode
+
+            // state = mext state
+
+            // Increment total_t
+
+            // Recalculate epsilon
+            epsilon = Mathf.Max(epsilon - epsilon_change, epsilon_min); // ** DONE
+
         }
         return 0; // Need to return the reward total for the episode
     }
