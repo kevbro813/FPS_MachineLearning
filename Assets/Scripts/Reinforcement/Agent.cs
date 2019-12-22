@@ -42,7 +42,7 @@ public class Agent : MonoBehaviour
     This way the agent can have simultaneous movements, but it will not allow the agent to move forward and reverse at the same time
     It also makes the movements binary rather than a variable that affects speed. Each movement pair also has a "stopped" action, and the greatest input
     between the three will be the active action */
-    public bool[] DetermineAction(float[] action)
+    public bool[] BinaryAction(float[] action)
     {
         bool[] bAction = new bool[action.Length];
 
@@ -113,7 +113,77 @@ public class Agent : MonoBehaviour
         }
         return bAction;
     }
+    public float[] TrimAction(float[] action)
+    {
+        float[] tAction = new float[action.Length];
 
+        //action[0] = forward, action[1] = Reverse, action[2] = no vertical, action[3] = right, action[4] = left, action[5] = no lateral, action[6] = rotate right, action[7] = rotate left, action[8] no rotation
+
+        if (action[2] > action[0] && action[2] > action[1]) // If No vertical is greater than forward or back...
+        {
+            // STOP VERTICAL
+            tAction[0] = 0;
+            tAction[1] = 0;
+            tAction[2] = action[2];
+        }
+        else if (action[0] > action[1]) // If forward is greater than back...
+        {
+            //MOVE FORWARD
+            tAction[0] = action[0];
+            tAction[1] = 0;
+            tAction[2] = 0;
+        }
+        else // If back is the greatest
+        {
+            // MOVE BACKWARD
+            tAction[0] = 0;
+            tAction[1] = action[1];
+            tAction[2] = 0;
+        }
+        if (action[5] > action[3] && action[5] > action[4]) // If No Lateral is the greatest...
+        {
+            // NO LATERAL MOVEMENT
+            tAction[3] = 0;
+            tAction[4] = 0;
+            tAction[5] = action[5];
+        }
+        else if (action[3] > action[4]) // If right is the greatest input...
+        {
+            // MOVE RIGHT
+            tAction[3] = action[3];
+            tAction[4] = 0;
+            tAction[5] = 0;
+        }
+        else // If left is the greatest...
+        {
+            // MOVE LEFT
+            tAction[3] = 0;
+            tAction[4] = action[4];
+            tAction[5] = 0;
+        }
+        if (action[8] > action[6] && action[8] > action[7]) // If No rotation is the greatest input...
+        {
+            // NO ROTATION
+            tAction[6] = 0;
+            tAction[7] = 0;
+            tAction[8] = action[8];
+        }
+        else if (action[4] < action[5]) // If rotate right...
+        {
+            // ROTATE RIGHT
+            tAction[6] = action[6];
+            tAction[7] = 0;
+            tAction[8] = 0;
+        }
+        else // If rotate left...
+        {
+            // ROTATE LEFT
+            tAction[6] = 0;
+            tAction[7] = action[7];
+            tAction[8] = 0;
+        }
+        return tAction;
+    }
     // Create a random action
     public float[] RandomAction()
     {
@@ -194,7 +264,7 @@ public class Agent : MonoBehaviour
         //Python: next_Qs = target_model.predict(next_states)
         for (int i = 0; i < MINI_BATCH_SIZE; i++)
         {
-            if(nextStates[i] != null)
+            if (nextStates[i] != null)
             {
                 nextQValues[i] = dqn.targetNet.FeedForward(nextStates[i]);
             }
@@ -202,25 +272,44 @@ public class Agent : MonoBehaviour
 
         //Python: next_Q = np.amax(next_Qs, axis = 1) - Returns an array containing the max value for each row
         // Pass nextQValues to DetermineAction to get boolean action values
-        bool[][] bNextQValues = new bool[MINI_BATCH_SIZE][];
+        float[][] tNextQValues = new float[MINI_BATCH_SIZE][];
         for (int i = 0; i < MINI_BATCH_SIZE; i++)
         {
-            if(nextQValues[i] != null)
+            if (nextQValues[i] != null)
             {
-                bNextQValues[i] = DetermineAction(nextQValues[i]);
+                tNextQValues[i] = TrimAction(nextQValues[i]);
             }
         }
 
         //Python: targets = rewards + np.invert(dones).astype(np.float32) * gamma * next_Q
-        // TODO: Calculate targets
 
         // TODO: Update model
-
         //Python: loss = model.update(states, actions, targets)
-        // TODO: Calculate Loss
 
-        //Python: return loss
-        // TODO: RESEARCH
+        //    def update(self, states, actions, targets):
+        //      c, _ = self.session.run(
+        //          [self.cost, self.train_op],
+        //          feed_dict ={
+        //              self.X: states,
+        //              self.G: targets,
+        //              self.actions: actions
+        //          }
+        //      )
+        //      return c
+
+        //      # cost = tf.reduce_mean(tf.square(self.G - selected_action_values))
+        //      cost = tf.reduce_mean(tf.losses.huber_loss(self.G, selected_action_values))
+        //      self.train_op = tf.train.AdamOptimizer(1e-5).minimize(cost)
+        //      # self.train_op = tf.train.AdagradOptimizer(1e-2).minimize(cost)
+        //      # self.train_op = tf.train.RMSPropOptimizer(2.5e-4, decay=0.99, epsilon=1e-3).minimize(cost)
+        //      # self.train_op = tf.train.RMSPropOptimizer(0.00025, 0.99, 0.0, 1e-6).minimize(cost)
+        //      # self.train_op = tf.train.MomentumOptimizer(1e-3, momentum=0.9).minimize(cost)
+        //      # self.train_op = tf.train.GradientDescentOptimizer(1e-4).minimize(cost)
+
+        //      self.cost = cost
+        
+        //Python: return cost
+
         return true;
     }
     // TODO: Get a mini-batch of tuples from the experience buffer to train the agent

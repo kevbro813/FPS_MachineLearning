@@ -94,7 +94,7 @@ public class DQN : MonoBehaviour
             float[] currentAction = agent.GetAction(currentState, epsilon); // **DONE
 
             // Determine action function will return argmax between movement pairs, and convert to a binary action output
-            bool[] bAction = agent.DetermineAction(currentAction); // **DONE
+            bool[] bAction = agent.BinaryAction(currentAction); // **DONE
 
             // Perform the action
             agent.PerformAction(bAction); // **DONE
@@ -114,10 +114,10 @@ public class DQN : MonoBehaviour
             // Update experience replay memory
             agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone); // **DONE
 
-            env.stateCounter++; // Increment total_t
-
             // Train the agent
             isDone = agent.Train(agent.experienceBuffer); // **IN PROGRESS
+
+            env.stateCounter++; // Increment total_t
 
             // Keep track of time
 
