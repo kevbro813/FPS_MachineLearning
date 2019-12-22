@@ -13,16 +13,16 @@ public class Environment : MonoBehaviour
 
     // Required for DQN
     public const int FRAMES_PER_STATE = 5; // The number of frames per state
-    public const int FRAME_SIZE = 10;
-    public float stateCounter = 0;
+    public const int FRAME_SIZE = 10; // The number of inputs that comprise each frame
+    public float stateCounter = 0; // TODO: Need to implement this
+    public int stateSize;
+    public int storedStates = 10000;
+    public int frameBufferSize = 10000; // The size of the frame buffer (Calculated when environment is initialized)
+    public int fbIndex = 0;
+    public int fbCount = 0;
+    public float[][] frameBuffer; // An array to hold the frame buffer
 
-    public int frameBufferSize;
-    public float[] frameBuffer;
-    public float[] rewards;
-
-    public bool initialized = false;
-    private AIPawn aiPawn;
-    
+    private AIPawn aiPawn; 
     private Material mats;
     private Transform tf;
     public float distance = 5.0f;
@@ -47,44 +47,47 @@ public class Environment : MonoBehaviour
         ttf = GameManager.instance.objective.GetComponent<Transform>();
         lastLocation = GameManager.instance.spawnpoint.position;
         dqn = GetComponent<DQN>();
-        InitEnv();
-        frameBufferSize = (FRAME_SIZE * FRAMES_PER_STATE) + FRAME_SIZE;
+
+        distancesToObstacles = new float[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
+        stateSize = (FRAME_SIZE * FRAMES_PER_STATE) + FRAME_SIZE; // frameBufferSize is calculated by multiplying the FRAME_SIZE by FRAMES_PER_STATE which will give you the total size of a state
+        // Then add FRAME_SIZE to account for the next frame (The frame buffer will be all the frames that comprise both the current and next state, remember most of the frames will be repeated for both states)
+        // current state = [t-4 : t] and next state = [t-3: t+1] (t = current frame)
+        frameBuffer = new float[frameBufferSize][];
     }
+    // Initialize a new environment
     public void InitEnv()
     {
-        initialized = true;
-        // Create the environment
-        distancesToObstacles = new float[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
-        stateCounter = 0;
+        // TODO: Create the environment
+
     }
     public void ResetEnv()
     {
-        // Create the environment
         // TODO: Restart game
     }
-    public float[] UpdateFrameBuffer(float[] nf)
+    // Update the frame buffer by removing the oldest frame and appending the next frame
+    public int UpdateFrameBuffer(float[] nf) // Pass in the next frame
     {
-        List<float> fb = new List<float>();
-
-        for (int i = 0; i < frameBufferSize; i++)
+        if (fbIndex >= frameBufferSize) // If the frame buffer is not full...
         {
-            fb.Add(frameBuffer[i + FRAME_SIZE]);
-        }
-        for(int i = 0; i < FRAME_SIZE; i++)
-        {
-            fb.Add(nf[i]);
+            fbIndex = 0;
         }
 
-        return fb.ToArray();
+        frameBuffer[fbIndex] = nf; // Add the next frame to the frameBuffer
+
+        fbCount = Mathf.Max(fbCount, fbIndex + 1);
+
+        fbIndex = (fbIndex + 1) % frameBufferSize;
+
+        return fbIndex; // Return the frameBuffer Index. This will be added to a tuple and the state/next state can be determined wusing this int
     }
+    // Get the next_Frame array data from raycasts, colliders, etc.
     public float[] GetNextFrame()
     {
-        // Make next state (Append next frame to state to get next state for next iteration of the loop)
-        CollisionDetection();
+        CollisionDetection(); // CollisionDetection function will collect the distance to objects from the raycasts pointed in the 8 compass directions
 
-        float[] next_Frame = new float[FRAME_SIZE];
+        float[] next_Frame = new float[FRAME_SIZE]; // Create a float array  to hold the next frame
 
-        // Raycasts in the 8 compass points around the AI to detect when it is running into an obstacle
+        // Populate the next_Frame array with the respective values
         next_Frame[0] = distancesToObstacles[0];
         next_Frame[1] = distancesToObstacles[1];
         next_Frame[2] = distancesToObstacles[2];
@@ -104,34 +107,37 @@ public class Environment : MonoBehaviour
         // The direction the enemy is facing if sighted
         // Current AI state
 
-        return next_Frame;
+        return next_Frame; // Return next_Frame
     }
-    public float[] GetState(float[] buffer)
-    {
-        float[] state = new float[FRAME_SIZE * FRAMES_PER_STATE];
+    // Get the current state by taking the oldest frames
+    public float[] GetState(float[][] buffer, int frameIndex)
+    {   
+        float[][] state = new float[FRAMES_PER_STATE][]; // Create a new array to hold the state
+        float[] flatState = new float[FRAMES_PER_STATE * FRAME_SIZE];
 
-        for(int i = 0; i < (FRAME_SIZE * FRAMES_PER_STATE) - FRAME_SIZE; i++)
+        if (buffer[frameIndex] != null && fbCount - FRAMES_PER_STATE > 0)
         {
-            state[i] = buffer[i];
+            for (int i = 0; i < FRAMES_PER_STATE; i++) // Loop through the frames, stopping before the last frame
+            {  
+                state[FRAMES_PER_STATE - i - 1] = buffer[frameIndex];
+            }
+            int indx = 0;
+            for (int j = 0; j < 5; j++)
+            {
+                for (int k = 0; k < 10; k++)
+                {
+                    flatState[indx] = state[j][k];
+                    indx++;
+                }
+            }    
         }
-
-        return state;  
+        return flatState; // Return the current state
     }
-    public float[] GetNextState(float[] buffer)
-    {
-        float[] nState = new float[FRAME_SIZE * FRAMES_PER_STATE];
-
-        for (int i = FRAME_SIZE; i < (FRAME_SIZE * FRAMES_PER_STATE) + FRAME_SIZE; i++)
-        {
-            nState[i] = buffer[i];
-        }
-
-        return nState;
-    }
+    // TODO: Calculate the reward
     public float CalculateReward()
-    {
-        // TODO: Calculate the reward
+    {  
         float reward = 0;
+
 
 
         return reward;
@@ -203,7 +209,7 @@ public class Environment : MonoBehaviour
             }
         }
     }
-    // Scalar function used to normalize all input values that make up a state
+    // Normalize the "state" that is passed to the function
     public float[] NormalizeState(float[] means, float[] states, float counter, float[] variances, float[] stdDevs) // TODO: Should be normalize frame, need to change all states array to frame 
     {
         float[] normalizedStates = new float[states.Length];
@@ -230,18 +236,20 @@ public class Environment : MonoBehaviour
             stdDevs[i] = StdDeviation(variances[i]);
 
             // Normalize the current state values
-            normalizedStates[i] = ScalarFunction(states[i], means[i], stdDevs[i]);
+            normalizedStates[i] = ZScore(states[i], means[i], stdDevs[i]);
         }
 
         return normalizedStates;
     }
-    public float ScalarFunction(float dp, float mean, float stdDev)
+    // Scalar function (calculates zScore)
+    public float ZScore(float dp, float mean, float stdDev)
     {
         // Calculate a state's Z-score = (data point - mean) / standard deviation
         float zScore = (dp - mean) / stdDev;
 
         return zScore;
     }
+    // Recalculates the mean by including the newest datapoint
     public float UpdateMean(float sampleSize, float mean, float dp)
     {
         float sampleTotal = sampleSize * mean;
@@ -251,16 +259,19 @@ public class Environment : MonoBehaviour
 
         return mean;
     }
+    // Find the squared difference, used to calculate variance
     public float SquaredDifference(float dp, float mean)
     {
         float sqrdDiff = Mathf.Pow(dp - mean, 2);
         return sqrdDiff;
     }
+    // Calculate the variance
     public float Variance(float totalSqrdDiff, float stateCounter)
     {
         float variance = totalSqrdDiff / stateCounter;
         return variance;
     }
+    // Calculate the standard deviation
     public float StdDeviation(float variance)
     {
         float stdDev = Mathf.Sqrt(variance);

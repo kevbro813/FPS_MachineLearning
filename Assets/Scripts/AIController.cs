@@ -109,7 +109,8 @@ public class AIController : MonoBehaviour
             aiPawn.MoveBack(outputs[1]);
             aiPawn.MoveRight(outputs[2]);
             aiPawn.MoveLeft(outputs[3]);
-            aiPawn.Rotation(outputs[4]);
+            aiPawn.RotateRight(outputs[4]);
+            aiPawn.RotateLeft(outputs[5]);
 
             // ***Fitness Modifiers***
 

@@ -92,9 +92,9 @@ GameObject:
   - component: {fileID: 5874489041997724356}
   - component: {fileID: 9059662200578306949}
   - component: {fileID: 7572914116102913964}
-  - component: {fileID: 5060990755059105959}
   - component: {fileID: 8827922304102309342}
   - component: {fileID: 4522811249824510751}
+  - component: {fileID: 1971061415}
   m_Layer: 8
   m_Name: RLCapsule
   m_TagString: AI
@@ -189,8 +189,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c493cb2262dc094ea0a7fb01df86980, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 50
-  rotationSpeed: 50
+  moveSpeed: 1
+  rotationSpeed: 1
 --- !u!54 &7572914116102913964
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -207,24 +207,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 0
---- !u!114 &5060990755059105959
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5874489041997724355}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe972750c172bbf4db184814f6d358dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agent: {fileID: 0}
-  env: {fileID: 0}
-  rewards: []
-  episodeQty: 10
-  episodeCount: 0
-  isTraining: 1
 --- !u!114 &8827922304102309342
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -237,9 +219,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6320296abcc8404ba9c8798a797c459, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actions: []
-  rlComp: {fileID: 0}
+  aiPawn: {fileID: 0}
+  dqn: {fileID: 0}
   env: {fileID: 0}
+  bufferIndex: 0
+  actionQty: 0
+  bufferCount: 0
 --- !u!114 &4522811249824510751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -252,29 +237,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df8f6b441c486e74c8f65441761e76cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  states:
-  - 10
-  - 12
-  - 13
-  stateMeans:
-  - 0
-  - 0
-  - 0
-  stateVariance:
-  - 0
-  - 0
-  - 0
-  stateStdDev: []
-  normalizedStates:
-  - 0
-  - 0
-  - 0
   stateCounter: 1
-  initialized: 0
-  net:
-    neuralLayers: 
-    fitness: 0
-    aiType: 0
+  stateSize: 0
+  storedStates: 10000
+  frameBufferSize: 100
+  fbIndex: 0
+  fbCount: 0
+  rewards: []
   distance: 5
   directions: []
   distancesToObstacles: []
@@ -284,6 +253,38 @@ MonoBehaviour:
   maxViewDistance: 100
   fieldOfView: 45
   collisionDetectRange: 1
-  reward: 0
+  reward: []
   lastLocation: {x: 0, y: 0, z: 0}
-  aiState: patrol
+  dqn: {fileID: 0}
+--- !u!114 &1971061415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5874489041997724355}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2882b74f2d90c546b828961f62583c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainNet:
+    neuralLayers: 
+    fitness: 0
+    aiType: 0
+  targetNet:
+    neuralLayers: 
+    fitness: 0
+    aiType: 0
+  initialized: 0
+  isTraining: 1
+  episodeCount: 0
+  episodeMax: 10
+  env: {fileID: 0}
+  agent: {fileID: 0}
+  mLayers: 
+  tLayers: 
+  inputsPerState: 0
+  epsilon: 1
+  epsilon_min: 0.1
+  epsilon_change: 0

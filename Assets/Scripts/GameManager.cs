@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
     public bool isTraining = false;
     public int populationSize = 50;
     public int generationNumber = 0;
-    private int[] layers = new int[] { 10, 10, 10, 5 };
+    private int[] layers = new int[] { 10, 10, 10, 6 };
     public List<NeuralNetwork> neuralNets;
     public List<NeuralNetwork> savedNets;
     public List<AIController> aiControllerList;
@@ -132,9 +132,9 @@ public class GameManager : MonoBehaviour
             {
                 GameObject.Destroy(aiObjectsList[i]);
             }
+            aiObjectsList.Clear();
         }
-
-        aiControllerList = new List<AIController>();
+        aiControllerList.Clear();
 
         // Loop to instantiate a generation of AI
         for (int i = 0; i < populationSize; i++)

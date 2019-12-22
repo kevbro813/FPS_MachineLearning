@@ -12,12 +12,13 @@ public class DQN : MonoBehaviour
     public int episodeMax = 10;
     public Environment env;
     public Agent agent;
-    private int[] mLayers = new int[] { 50, 80, 50, 5 };
-    private int[] tLayers = new int[] { 50, 80, 50, 5 };
+    public int[] mLayers;
+    public int[] tLayers;
     public int inputsPerState;
-    public float epsilon = 1.0f;
-    public float epsilon_min = 0.1f;
-    public float epsilon_change;
+    public float epsilon = 1.0f; // Used in GetAction function, Epsilon is basically the chance for a random action, Epsilon gradually reduces until it reaches epsilon_min
+    public float epsilon_min = 0.1f; // epsilon_min is the lowest value for epsilon, i.e. 0.1 means there is a 10% chance for a random action
+    public float epsilon_change; // This is the rate at which the value of epsilon will reduce each update
+    public float episodeReward;
     private void Start()
     {
         agent = GetComponent<Agent>();
@@ -31,6 +32,9 @@ public class DQN : MonoBehaviour
     }
     public void InitQNets()
     {
+        mLayers = new int[] { 50, 80, 50, 9 };
+        tLayers = new int[] { 50, 80, 50, 9 };
+
         NeuralNetwork mNet = new NeuralNetwork(mLayers);
         mNet.Mutate();
         InitMainNet(mNet);
@@ -55,11 +59,12 @@ public class DQN : MonoBehaviour
     public void RunGame()
     {
         InitQNets();
+
         for (int i = 1; i <= episodeMax; i++) // For each episode...
         {
             episodeCount = i; // Increase episode count. Will be used for display
             float episodeReward = RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
-            //rewards.Add(reward); // Add the score to the list of reward scores. TODO: Sort functionality, Icomparable.
+            //episodes.Add(episode); // Add the score to the list of rewards, neural nets and other data. TODO: Sort functionality, Icomparable.
 
             // TODO: Save Episodes
         }
@@ -68,9 +73,9 @@ public class DQN : MonoBehaviour
     // Run one episode
     public float RunEpisode(Agent agent, Environment env)
     {
-        // Reset the environment's state each episode
-        env.ResetEnv();    
-        
+        env.InitEnv();
+        agent.InitAgent();
+        episodeReward = 0;
         // TODO: Create initial state
 
         bool isDone = false;
@@ -81,32 +86,38 @@ public class DQN : MonoBehaviour
             {
                 targetNet = mainNet;
             }
-
+            
             // Get state from fram buffer
-            float[] currentState = env.GetState(env.frameBuffer); // **DONE
+            float[] currentState = env.GetState(env.frameBuffer, env.fbIndex); // **DONE
 
             // Input the state and return an action
-            float[] currentAction = agent.GetAction(currentState, epsilon);
+            float[] currentAction = agent.GetAction(currentState, epsilon); // **DONE
+
+            // Determine action function will return argmax between movement pairs, and convert to a binary action output
+            bool[] bAction = agent.DetermineAction(currentAction); // **DONE
 
             // Perform the action
-            agent.PerformAction(currentAction); // **DONE
+            agent.PerformAction(bAction); // **DONE
 
             // Creates next frame
-            float[] nextFrame = env.GetNextFrame(); // **NONE
-
+            float[] nextFrame = env.GetNextFrame(); // **DONE
+            
             // Add frame to frame buffer
-            env.frameBuffer = env.UpdateFrameBuffer(nextFrame); // **DONE
+            int lastFrameIndex = env.UpdateFrameBuffer(nextFrame); // **DONE
 
             // Calculates the reward based on the state
-            float currentReward = env.CalculateReward();
+            float currentReward = env.CalculateReward(); // ** IN PROGRESS
+
+            // Add current reward to the episode total
+            episodeReward += currentReward; 
 
             // Update experience replay memory
-            agent.ExperienceReplay(env.frameBuffer, currentAction, currentReward); // **DONE
+            agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone); // **DONE
 
-            env.stateCounter++;
+            env.stateCounter++; // Increment total_t
 
             // Train the agent
-            isDone = agent.Train(agent.experienceBuffer);
+            isDone = agent.Train(agent.experienceBuffer); // **IN PROGRESS
 
             // Keep track of time
 
@@ -115,8 +126,6 @@ public class DQN : MonoBehaviour
             // Increment steps in episode
 
             // state = mext state
-
-            // Increment total_t
 
             // Recalculate epsilon
             epsilon = Mathf.Max(epsilon - epsilon_change, epsilon_min); // ** DONE
