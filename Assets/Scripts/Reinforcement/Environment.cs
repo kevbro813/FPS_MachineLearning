@@ -229,7 +229,7 @@ public class Environment : MonoBehaviour
             // Update the total squared difference
             totalSqrdDiff += sqrdDiff;
 
-            counter++; // TODO: Need to move this. It should only update once per tick, not once per 
+            counter++; // TODO: Is this incremented correctly?
 
             // Recalculate Variance and Standard Deviation
             variances[i] = Variance(totalSqrdDiff, counter);

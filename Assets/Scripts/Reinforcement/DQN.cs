@@ -14,7 +14,6 @@ public class DQN : MonoBehaviour
     public Agent agent;
     public int[] mLayers;
     public int[] tLayers;
-    public int inputsPerState;
     public float epsilon = 1.0f; // Used in GetAction function, Epsilon is basically the chance for a random action, Epsilon gradually reduces until it reaches epsilon_min
     public float epsilon_min = 0.1f; // epsilon_min is the lowest value for epsilon, i.e. 0.1 means there is a 10% chance for a random action
     public float epsilon_change; // This is the rate at which the value of epsilon will reduce each update
@@ -23,7 +22,6 @@ public class DQN : MonoBehaviour
     {
         agent = GetComponent<Agent>();
         env = GetComponent<Environment>();
-        inputsPerState = 10 * 5; // TODO: When you are done being lazy, make it two variables or const for input and frames per state
         epsilon_change = (epsilon - epsilon_min) / 500000;
     }
     private void Update()
@@ -90,8 +88,8 @@ public class DQN : MonoBehaviour
             // Get state from fram buffer
             float[] currentState = env.GetState(env.frameBuffer, env.fbIndex); // **DONE
 
-            // Input the state and return an action
-            float[] currentAction = agent.GetAction(currentState, epsilon); // **DONE
+            // Input the state and return an action using Epsilon Greedy function (Explore and Exploit)
+            float[] currentAction = agent.EpsilonGreedy(currentState, epsilon); // **DONE
 
             // Determine action function will return argmax between movement pairs, and convert to a binary action output
             bool[] bAction = agent.BinaryAction(currentAction); // **DONE

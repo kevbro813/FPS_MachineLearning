@@ -14,6 +14,7 @@ public class Agent : MonoBehaviour
     public const int FRAMES_PER_STATE = 5;
     public int actionQty; // The number of actions the agent can perform
     public const int MINI_BATCH_SIZE = 32; // Size of the mini-batch used to train the agent
+    public float gamma = 0.95f; // TODO: What should gamma be set to?
 
     public int bufferCount = 0;
     private void Start()
@@ -184,6 +185,19 @@ public class Agent : MonoBehaviour
         }
         return tAction;
     }
+    public float[] ArgmaxAction(float[] action)
+    {
+        float[] amAction = new float[action.Length];
+        for (int i = 0; i < action.Length - 1; i++)
+        {
+            if (action[i] < action[i + 1])
+            {
+                amAction[i] = 0;
+                amAction[i + 1] = action[i + 1];
+            }
+        }
+        return amAction;
+    }
     // Create a random action
     public float[] RandomAction()
     {
@@ -198,7 +212,7 @@ public class Agent : MonoBehaviour
     }
 
     // Get an action based on state, or small chance (epsilon) for a random action
-    public float[] GetAction(float[] state, float eps) // States are passed to neural network and returns action
+    public float[] EpsilonGreedy(float[] state, float eps) // States are passed to neural network and returns action
     {
         // The probability for a random action is based on epsilon. Epsilon will gradually reduce which means the agent's behavior will become less random over time. *Exploration vs. Exploitation
         if (UnityEngine.Random.value < eps) // Python: Random value needs to match np.random.random() - returns a half-open interval [0.0, 1.0)
@@ -210,7 +224,7 @@ public class Agent : MonoBehaviour
         else
         {
             // Action via neural net
-            // Python: return np.argmax(self.predict([x])[0]) - return the highest
+            // Python: return np.argmax(self.predict([x])[0]) - return the highes
             return dqn.mainNet.FeedForward(state);
         }
     }
@@ -239,80 +253,7 @@ public class Agent : MonoBehaviour
         // bufferIndex is set to the modulus of bufferIndex + 1. This will reset current to 0 when the buffer is full. (This represents the current index to fill with new tuples)
         bufferIndex = (bufferIndex + 1) % EXP_BUFFER_SIZE;
     }
-    //TODO: Train the Agent using the target neural network
-    public bool Train(Tuple<int, float[], float, bool>[] expBuffer) // Frame buffer, action, reward, isDone are passed in
-    {
-        // Get a random batch from the experience buffer
-        Tuple<int, float[], float, bool>[] miniBatch = GetMiniBatch(expBuffer);
-
-        // Create array of states and nextStates
-        float[][] states = new float[MINI_BATCH_SIZE][];
-        float[][] nextStates = new float[MINI_BATCH_SIZE][];
-        
-        for (int i = 0; i < MINI_BATCH_SIZE; i++)
-        {
-            if (expBuffer[i] != null)
-            {
-                states[i] = env.GetState(env.frameBuffer, expBuffer[i].Item1);
-                nextStates[i] = env.GetState(env.frameBuffer, expBuffer[i].Item1);
-            }
-        }
-
-        // Calculate targets      
-        float[][] nextQValues = new float[MINI_BATCH_SIZE][];
-
-        //Python: next_Qs = target_model.predict(next_states)
-        for (int i = 0; i < MINI_BATCH_SIZE; i++)
-        {
-            if (nextStates[i] != null)
-            {
-                nextQValues[i] = dqn.targetNet.FeedForward(nextStates[i]);
-            }
-        }
-
-        //Python: next_Q = np.amax(next_Qs, axis = 1) - Returns an array containing the max value for each row
-        // Pass nextQValues to DetermineAction to get boolean action values
-        float[][] tNextQValues = new float[MINI_BATCH_SIZE][];
-        for (int i = 0; i < MINI_BATCH_SIZE; i++)
-        {
-            if (nextQValues[i] != null)
-            {
-                tNextQValues[i] = TrimAction(nextQValues[i]);
-            }
-        }
-
-        //Python: targets = rewards + np.invert(dones).astype(np.float32) * gamma * next_Q
-
-        // TODO: Update model
-        //Python: loss = model.update(states, actions, targets)
-
-        //    def update(self, states, actions, targets):
-        //      c, _ = self.session.run(
-        //          [self.cost, self.train_op],
-        //          feed_dict ={
-        //              self.X: states,
-        //              self.G: targets,
-        //              self.actions: actions
-        //          }
-        //      )
-        //      return c
-
-        //      # cost = tf.reduce_mean(tf.square(self.G - selected_action_values))
-        //      cost = tf.reduce_mean(tf.losses.huber_loss(self.G, selected_action_values))
-        //      self.train_op = tf.train.AdamOptimizer(1e-5).minimize(cost)
-        //      # self.train_op = tf.train.AdagradOptimizer(1e-2).minimize(cost)
-        //      # self.train_op = tf.train.RMSPropOptimizer(2.5e-4, decay=0.99, epsilon=1e-3).minimize(cost)
-        //      # self.train_op = tf.train.RMSPropOptimizer(0.00025, 0.99, 0.0, 1e-6).minimize(cost)
-        //      # self.train_op = tf.train.MomentumOptimizer(1e-3, momentum=0.9).minimize(cost)
-        //      # self.train_op = tf.train.GradientDescentOptimizer(1e-4).minimize(cost)
-
-        //      self.cost = cost
-        
-        //Python: return cost
-
-        return true;
-    }
-    // TODO: Get a mini-batch of tuples from the experience buffer to train the agent
+    // Get a mini-batch of tuples from the experience buffer to train the agent
     public Tuple<int, float[], float, bool>[] GetMiniBatch(Tuple<int, float[], float, bool>[] exp_Buffer)
     {
         Tuple<int, float[], float, bool>[] mb = new Tuple<int, float[], float, bool>[MINI_BATCH_SIZE];
@@ -329,5 +270,207 @@ public class Agent : MonoBehaviour
             mb[i] = exp_Buffer[rand];
         }
         return mb;
+    }
+    // Train the Agent using the target neural network
+    public bool Train(Tuple<int, float[], float, bool>[] expBuffer) // Frame buffer, action, reward, isDone are passed in
+    {
+        // Get a random batch from the experience buffer
+        Tuple<int, float[], float, bool>[] miniBatch = GetMiniBatch(expBuffer);
+
+        // Create array of states and nextStates
+        float[][] states = new float[MINI_BATCH_SIZE][];
+        float[][] nextStates = new float[MINI_BATCH_SIZE][];
+        float[][] actions = new float[MINI_BATCH_SIZE][];
+        float[] rewards = new float[MINI_BATCH_SIZE];
+        bool[] dones = new bool[MINI_BATCH_SIZE];
+
+        for (int i = 0; i < MINI_BATCH_SIZE; i++)
+        {
+            if (expBuffer[i] != null)
+            {
+                states[i] = env.GetState(env.frameBuffer, expBuffer[i].Item1);
+                nextStates[i] = env.GetState(env.frameBuffer, expBuffer[i].Item1);
+                actions[i] = expBuffer[i].Item2;
+                rewards[i] = expBuffer[i].Item3;
+                dones[i] = expBuffer[i].Item4;
+            }
+        }
+
+        //****** EVERYTHING AFTER THIS IS UNDER CONSTRUCTION!!!
+
+        // Calculate targets      
+        float[][] nextQValues = new float[MINI_BATCH_SIZE][];
+
+        //Python: next_Qs = target_model.predict(next_states)
+        for (int i = 0; i < MINI_BATCH_SIZE; i++)
+        {
+            if (nextStates[i] != null)
+            {
+                nextQValues[i] = dqn.targetNet.FeedForward(nextStates[i]);
+            }
+        }
+        //Python: next_Q = np.amax(next_Qs, axis = 1) - Returns an array containing the max value for each row
+        // Pass nextQValues to DetermineAction to only return the strongest action values
+        float[][] tNextQValues = new float[MINI_BATCH_SIZE][];
+        for (int i = 0; i < MINI_BATCH_SIZE; i++)
+        {
+            if (nextQValues[i] != null)
+            {
+                tNextQValues[i] = TrimAction(nextQValues[i]);
+            }
+        }
+        //Python: targets = rewards + np.invert(dones).astype(np.float32) * gamma * next_Q
+        float[][] targets = new float[MINI_BATCH_SIZE][];
+
+        for (int i = 0; i < MINI_BATCH_SIZE; i++)
+        {
+            if (targets[i] != null)
+            {
+                for (int j = 0; j < MINI_BATCH_SIZE; j++)
+                {
+
+                    float done = 0;
+                    if (dones[i] == true)
+                    {
+                        done = 0f; // Done being true should return 0, this is the inverted value of the boolean variable which replaces (np.invert(dones).astype(np.float32)
+                    }
+                    else
+                    {
+                        done = 1f;
+                    }
+                    targets[i][j] = rewards[i] + (done * gamma * nextQValues[i][j]);
+                }
+            }
+        }
+        // Update model
+        double[][] loss = UpdateModel(states, actions, targets); // TODO: Pass in nextQValues or actions?
+
+        return true;
+    }
+    // TODO: Finish UpdateModel method
+    public double[][] UpdateModel(float[][] states, float[][] actions, float[][] targets) // Python: def update(self, states, actions, targets):
+    {
+        double[][] loss = LossFunction(actions, targets);
+        MinimizeFunction(loss, dqn.targetNet.weightsMatrix);
+
+        return loss; // Return cost
+    }
+    // TODO: Calculate Loss (AKA Cost) using Huber Loss function
+    public double[][] LossFunction(float[][] actions, float[][] targets)
+    {
+        // PYTHON: cost = tf.reduce_mean(tf.losses.huber_loss(self.G, selected_action_values))
+        // x = selected_actions, y = targets
+        float delta = 1; // TODO: Research what is a valid delta value
+        double[][] loss = new double[MINI_BATCH_SIZE][];
+
+        float[][] selected_Actions = new float[MINI_BATCH_SIZE][];
+        for (int i = 0; i < MINI_BATCH_SIZE; i++)
+        {
+            selected_Actions[i] = ArgmaxAction(actions[i]);
+        }
+            
+
+        // Huber Loss Algorithm
+        for (int i = 0; i < MINI_BATCH_SIZE; i++) // TODO: Check if MINI_BATCH_SIZE is the correct max
+        {
+            if (selected_Actions[i] != null && targets[i] != null)
+            {
+                for (int j = 0; j < actionQty; j++)
+                {
+                    if (Math.Abs(targets[i][j] - selected_Actions[i][j] ) <= delta)
+                    {
+                        // Quadratic function
+                        loss[i][j] = 0.5d * Math.Pow((targets[i][j] - selected_Actions[i][j]), 2);
+                    }
+                    else
+                    {
+                        // Linear function
+                        loss[i][j] = delta * Math.Abs(targets[i][j] - selected_Actions[i][j]) - 0.5d * Math.Pow(delta, 2);
+                    }
+                }
+            }
+        }   
+        return loss;
+    } 
+
+    // TODO: Create the selected actions that will be used to calculate cost
+    public float[][] SelectedActions(float[][] actions)   
+    {
+
+        float[][] selectedActionValues = new float[EXP_BUFFER_SIZE][];
+        // Python: self.predict_op * tf.one_hot(self.actions, K) // Get the highest value in each column and output the results in separate arrays, each representing a possible action
+        return selectedActionValues;
+    }
+    public float CalculateGradient(float[][][] weightParams)
+    {
+        float gradient = 0;
+        return gradient;
+    }
+    // TODO: Minimize cost using Adam optimizer
+    public float[][][] MinimizeFunction(double[][] loss, float[][][] weights) // TODO: This function will return the updated parameters for optimization
+    {
+        float learningRate = 0.001f;
+        float decay_1 = 0.9f;
+        float decay_2 = 0.999f;
+        int parameterQty = 10; // TODO: Set this properly
+        double epsilonHat = Math.Pow(10, -5); // Hyperparameter that I have seen set between 10^-8 and 10^-5 (AKA 1e-8 and 1e-5), also 1 or 0.1 have been suggested
+        double[][] learning_Rates = new double[EXP_BUFFER_SIZE][];
+        float[][][] parameters = dqn.mainNet.weightsMatrix; // TODO: Parameters should be neural network weights
+        double[][] firstMoment= new double[EXP_BUFFER_SIZE][];
+        double[][] secondMoment = new double[EXP_BUFFER_SIZE][];
+        for (int i = 0; i < parameterQty; i++)
+        {
+            firstMoment[0][i] = 0; // Initialize the first moment vector, index 0 as 0
+            secondMoment[0][i] = 0; // Initialize the second moment vector, index 0 as 0
+            //parameters[0][i] = 0; //Initialize the initial parameter vector as 0
+        }
+        int t = 0; // TimeStep
+        bool isConverged = false;
+
+        // TODO: Optimize algorithm by replacing the end with the suggested improvement on page two of the research paper
+        while (!isConverged)
+        {
+            t++;
+            if (t < EXP_BUFFER_SIZE) // Check that the current timestep is less than the experience buffer size
+            {
+                float gradient = CalculateGradient(parameters); // TODO: Delta 0ft (0t - 1) // Gradient = change in parameters given the previous parameters
+                for (int i = 0; i < parameterQty; i++)
+                {
+                    if (learning_Rates[t] != null)
+                    {
+                        learning_Rates[t][i] = learningRate * Math.Sqrt(1 - Math.Pow(decay_2, t)) / (1 - Math.Pow(decay_1, t));
+                    }
+                }
+                for (int i = 0; i < parameterQty; i++)
+                {
+                    if (firstMoment[t] != null && secondMoment[t] != null)
+                    {
+                        firstMoment[t][i] = decay_1 * firstMoment[t - 1][i] + (1 - decay_1) * gradient;
+                        secondMoment[t][i] = decay_2 * secondMoment[t - 1][i] + (1 - decay_2) * Math.Pow(gradient, 2);
+                    }
+                }
+                
+                for (int i = 0; i < weights.Length; i++)
+                {
+                    for (int j = 0; j < weights[i].Length; j++)
+                    {
+                        for (int k = 0; k < weights[i][j].Length; k++)
+                        {
+                            if (parameters[i][j][k] != null)
+                            {
+                                //parameters[i][j][k] = parameters[i][j][k] - learning_Rates[t][i] * firstMoment[t][i] / (Math.Sqrt(secondMoment[t][i]) + epsilonHat);
+                            }
+                        }
+                    }
+                }
+            }
+            else // If the experience buffer is full, then reset to the beginning.
+            {
+                t = 0;
+                isConverged = true; // TODO: Need to move this to a proper location, but this is required to not send the game into an infinite loop
+                // TODO: Or end of training session.
+            }
+        }
+        return parameters;
     }
 }
