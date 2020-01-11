@@ -20,5 +20,21 @@ public class Objective : MonoBehaviour
             Destroy(other.gameObject); // Destroy the game object     
             winners++; // Increment winners
         }
+
+
+    }
+    private void OnTriggerEnter(Collider col)
+    {
+        if (col.gameObject.CompareTag("Agent"))
+        {
+            col.GetComponent<Environment>().isOnObjective = true;
+        }
+    }
+    private void OnTriggerExit(Collider col)
+    {
+        if (col.gameObject.CompareTag("Agent"))
+        {
+            col.GetComponent<Environment>().isOnObjective = false;
+        }
     }
 }

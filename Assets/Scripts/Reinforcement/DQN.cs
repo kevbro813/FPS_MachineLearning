@@ -8,40 +8,57 @@ public class DQN : MonoBehaviour
     public NeuralNetwork targetNet;
     public bool initialized = false;
     public bool isTraining = true;
-    public int episodeCount = 0;
+    public int episodeNum = 1;
     public int episodeMax = 10;
     public Environment env;
     public Agent agent;
-    public int[] mLayers;
-    public int[] tLayers;
+    public int[] layers;
     public float epsilon = 1.0f; // Used in GetAction function, Epsilon is basically the chance for a random action, Epsilon gradually reduces until it reaches epsilon_min
     public float epsilon_min = 0.1f; // epsilon_min is the lowest value for epsilon, i.e. 0.1 means there is a 10% chance for a random action
     public float epsilon_change; // This is the rate at which the value of epsilon will reduce each update
-    public float episodeReward;
+    public float episodeReward = 0;
+    public int epiSteps = 0;
+    public bool isDone = false;
+    float[] currentState;
+    double[] currentAction;
+    bool[] bAction;
+    float[] nextFrame;
+    int lastFrameIndex;
+    float currentReward;
+    public int layerQty;
     private void Start()
     {
         agent = GetComponent<Agent>();
         env = GetComponent<Environment>();
+
+        InitQNets();
         epsilon_change = (epsilon - epsilon_min) / 500000;
+        currentState = new float[env.framesPerState];
+        currentAction = new double[agent.actionQty];
+        bAction = new bool[agent.actionQty];
+        nextFrame = new float[env.frameSize];
+        isDone = false;
+
+        env.InitEnv();
+        agent.InitAgent();
     }
-    private void Update()
+    private void FixedUpdate()
     {
         RunGame();
     }
     public void InitQNets()
     {
-        mLayers = new int[] { 50, 80, 50, 9 };
-        tLayers = new int[] { 50, 80, 50, 9 };
+        layers = new int[] { 45, 45, 45, 7 };
+        agent.actionQty = layers[layers.Length - 1];
+        layerQty = layers.Length;
 
-        NeuralNetwork mNet = new NeuralNetwork(mLayers);
+        NeuralNetwork mNet = new NeuralNetwork(layers);
         mNet.Mutate();
         InitMainNet(mNet);
 
-        NeuralNetwork tNet = new NeuralNetwork(tLayers);
-        tNet.Mutate();
+        NeuralNetwork tNet = mNet;
         InitTargetNet(tNet);
     }
-
     public void InitMainNet(NeuralNetwork net)
     {
         // Initialize Main Neural Network
@@ -56,79 +73,82 @@ public class DQN : MonoBehaviour
     }
     public void RunGame()
     {
-        InitQNets();
-
-        for (int i = 1; i <= episodeMax; i++) // For each episode...
+        if (episodeNum <= episodeMax)
         {
-            episodeCount = i; // Increase episode count. Will be used for display
-            float episodeReward = RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
-            //episodes.Add(episode); // Add the score to the list of rewards, neural nets and other data. TODO: Sort functionality, Icomparable.
-
-            // TODO: Save Episodes
+            isDone = false;
         }
-    }
 
+        if (episodeNum == episodeMax)
+        {
+            Debug.Log("Game Over.");
+        }
+        RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.    
+        //episodes.Add(episode); // Add the score to the list of rewards, neural nets and other data. TODO: Sort functionality, Icomparable.
+    }
     // Run one episode
     public float RunEpisode(Agent agent, Environment env)
-    {
-        env.InitEnv();
-        agent.InitAgent();
-        episodeReward = 0;
-        // TODO: Create initial state
-
-        bool isDone = false;
-        while (!isDone)
+    {    
+        if (!isDone)
         {
             // Copy weights from main to target network periodically
-            if (env.stateCounter % 100 == 0)
+            if (env.stepCounter % 1000 == 0)
             {
                 targetNet = mainNet;
             }
-            
-            // Get state from fram buffer
-            float[] currentState = env.GetState(env.frameBuffer, env.fbIndex); // **DONE
+
+            // Get state from frame buffer
+            currentState = env.GetState(env.frameBuffer, env.fbIndex); // **DONE
 
             // Input the state and return an action using Epsilon Greedy function (Explore and Exploit)
-            float[] currentAction = agent.EpsilonGreedy(currentState, epsilon); // **DONE
+            currentAction = agent.EpsilonGreedy(currentState, epsilon); // **DONE
 
-            // Determine action function will return argmax between movement pairs, and convert to a binary action output
-            bool[] bAction = agent.BinaryAction(currentAction); // **DONE
+            // Convert action to binary which is used by the pawn
+            bAction = agent.BinaryAction(currentAction); // **DONE
 
             // Perform the action
             agent.PerformAction(bAction); // **DONE
 
+            env.stepCounter++; // Increment total steps
+            epiSteps++; // Increment steps in episode
+
+            if (epiSteps >= env.epiMaxSteps)
+            {
+                episodeNum++;
+                isDone = true;
+                epiSteps = 0;     
+            }
+
             // Creates next frame
-            float[] nextFrame = env.GetNextFrame(); // **DONE
-            
+            nextFrame = env.GetNextFrame(); // **DONE
+
             // Add frame to frame buffer
-            int lastFrameIndex = env.UpdateFrameBuffer(nextFrame); // **DONE
+            lastFrameIndex = env.UpdateFrameBuffer(nextFrame); // **DONE
 
             // Calculates the reward based on the state
-            float currentReward = env.CalculateReward(); // ** IN PROGRESS
+            currentReward = env.CalculateReward(nextFrame); // ** IN PROGRESS
 
             // Add current reward to the episode total
-            episodeReward += currentReward; 
+            episodeReward += currentReward;
 
             // Update experience replay memory
             agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone); // **DONE
 
-            // Train the agent
-            isDone = agent.Train(agent.experienceBuffer); // **IN PROGRESS
-
-            env.stateCounter++; // Increment total_t
+            if (isTraining == true)
+            {
+                // Train the agent
+                mainNet.weightsMatrix = agent.Train(agent.experienceBuffer, mainNet.weightsMatrix, mainNet.gradients, mainNet.nodeSignals, mainNet.neuronsMatrix); // **IN PROGRESS
+            }
 
             // Keep track of time
 
             // Track training time
 
-            // Increment steps in episode
-
             // state = mext state
 
             // Recalculate epsilon
             epsilon = Mathf.Max(epsilon - epsilon_change, epsilon_min); // ** DONE
-
         }
-        return 0; // Need to return the reward total for the episode
+        
+        return episodeReward; // Need to return the reward total for the episode
     }
 }

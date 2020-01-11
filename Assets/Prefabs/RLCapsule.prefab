@@ -97,7 +97,7 @@ GameObject:
   - component: {fileID: 1971061415}
   m_Layer: 8
   m_Name: RLCapsule
-  m_TagString: AI
+  m_TagString: Agent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -223,7 +223,10 @@ MonoBehaviour:
   dqn: {fileID: 0}
   env: {fileID: 0}
   bufferIndex: 0
+  expBufferSize: 1000
   actionQty: 0
+  miniBatchSize: 32
+  gamma: 0.95
   bufferCount: 0
 --- !u!114 &4522811249824510751
 MonoBehaviour:
@@ -237,13 +240,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df8f6b441c486e74c8f65441761e76cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stateCounter: 1
+  framesPerState: 5
+  frameSize: 9
+  stepCounter: 0
+  epiMaxSteps: 1000
   stateSize: 0
-  storedStates: 10000
   frameBufferSize: 100
   fbIndex: 0
   fbCount: 0
-  rewards: []
+  isOnObjective: 0
   distance: 5
   directions: []
   distancesToObstacles: []
@@ -278,13 +283,14 @@ MonoBehaviour:
     aiType: 0
   initialized: 0
   isTraining: 1
-  episodeCount: 0
+  episodeNum: 1
   episodeMax: 10
   env: {fileID: 0}
   agent: {fileID: 0}
-  mLayers: 
-  tLayers: 
-  inputsPerState: 0
+  layers: 
   epsilon: 1
   epsilon_min: 0.1
   epsilon_change: 0
+  episodeReward: 0
+  epiSteps: 0
+  isDone: 0

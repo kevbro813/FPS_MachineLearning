@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
     public bool isTraining = false;
     public int populationSize = 50;
     public int generationNumber = 0;
-    private int[] layers = new int[] { 10, 10, 10, 6 };
+    private int[] layers = new int[] { 10, 10, 10, 7 };
     public List<NeuralNetwork> neuralNets;
     public List<NeuralNetwork> savedNets;
     public List<AIController> aiControllerList;

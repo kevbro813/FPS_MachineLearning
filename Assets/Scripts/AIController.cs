@@ -102,20 +102,21 @@ public class AIController : MonoBehaviour
 
 
             // Pass inputs to feed forward function to produce outputs
-            float[] outputs = net.FeedForward(inputs);
+            double[] outputs = net.FeedForward(inputs);
 
             // Output values passed to aiPawn functions
-            aiPawn.MoveForward(outputs[0]);
-            aiPawn.MoveBack(outputs[1]);
-            aiPawn.MoveRight(outputs[2]);
-            aiPawn.MoveLeft(outputs[3]);
-            aiPawn.RotateRight(outputs[4]);
-            aiPawn.RotateLeft(outputs[5]);
+            //aiPawn.MoveForward(action[0]);
+            //aiPawn.MoveBack(action[1]);
+            //aiPawn.MoveRight(action[2]);
+            //aiPawn.MoveLeft(action[3]);
+            //aiPawn.RotateRight(action[4]);
+            //aiPawn.RotateLeft(action[5]);
+            //aiPawn.NoMovement(action[6]);
 
             // ***Fitness Modifiers***
 
             AIVision(vectorToTarget); // Add fitness when target is in sight and as the AI moves closer
-            CollisionFitness(outputs); // AI will stay off the walls, but they gravitate safely around in a circle
+            //CollisionFitness(outputs); // AI will stay off the walls, but they gravitate safely around in a circle
             DistanceTraveled(); // Makes the AI want to move more
 
             // Add fitness for 
