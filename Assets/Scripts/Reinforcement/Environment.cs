@@ -143,14 +143,9 @@ public class Environment : MonoBehaviour
             Debug.Log("Reward!");
             reward++;
         }
-        // Add fitness when AI is moving forward unobstructed
-        if (nf[0] < 0 && distancesToObstacles[0] == 0)
-        {
-            reward++;
-        }
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
-            if (distancesToObstacles[i] > 0)
+            if (distancesToObstacles[i] < 1 && distancesToObstacles[i] != 0)
             {
                 reward--;
             }

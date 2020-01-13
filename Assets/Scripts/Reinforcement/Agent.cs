@@ -24,7 +24,6 @@ public class Agent : MonoBehaviour
     public int t = 0; // TimeStep
     bool isConverged = false;
     public int bufferCount = 0;
-    double[][] errors;
     
     private void Start()
     {
@@ -55,14 +54,14 @@ public class Agent : MonoBehaviour
         {
             // Random action
             // Python: return random.choice(self.K) - return a random element from the 1-D array
-            //Debug.Log("Explore");
+            Debug.Log("Explore");
             return RandomAction();
         }
         else
         {
             // Action via neural net
             // Python: return np.argmax(self.predict([x])[0]) - return the highes
-            //Debug.Log("Exploit");
+            Debug.Log("Exploit");
             return dqn.mainNet.FeedForward(state);
         }
     }
@@ -174,7 +173,7 @@ public class Agent : MonoBehaviour
     ////////// EVERYTHING AFTER THIS IS BROKEN \\\\\\\\\\\
 
     // Train the Agent using the target neural network
-    public double[][][] Train(Tuple<int, double[], float, bool>[] expBuffer, double[][][] parameters, double[][][] gradients, double[][] nSignals, double[][] neuronsMatrix) // Frame buffer, action, reward, isDone are passed in
+    public void Train(Tuple<int, double[], float, bool>[] expBuffer, double[][][] parameters, double[][][] gradients, double[][] nSignals, double[][] neuronsMatrix) // Frame buffer, action, reward, isDone are passed in
     {
         // Get a random batch from the experience buffer
         Tuple<int, double[], float, bool>[] miniBatch = GetMiniBatch(expBuffer);
@@ -195,15 +194,13 @@ public class Agent : MonoBehaviour
         {
             if (expBuffer[i] != null)
             {
-                states[i] = env.GetState(env.frameBuffer, expBuffer[i].Item1);
-                nextStates[i] = env.GetState(env.frameBuffer, expBuffer[i].Item1);
-                actions[i] = expBuffer[i].Item2;
-                rewards[i] = expBuffer[i].Item3;
-                dones[i] = expBuffer[i].Item4;
+                states[i] = env.GetState(env.frameBuffer, miniBatch[i].Item1 - 1);
+                nextStates[i] = env.GetState(env.frameBuffer, miniBatch[i].Item1);
+                actions[i] = miniBatch[i].Item2;
+                rewards[i] = miniBatch[i].Item3;
+                dones[i] = miniBatch[i].Item4;
             }
         }
-
-        
 
         double[][] targets = CalculateTargets(nextStates, rewards, dones);  
         double cost = Cost(actions, targets); // Calculate loss
@@ -213,54 +210,72 @@ public class Agent : MonoBehaviour
             if (targets[i] != null)
             {
                 double[] errors = CalculateErrors(targets, actions, i);
+                grads = CalculateGradients(grads, signals, neurons, parameters, actions, errors, i);
+            }          
+        }
+        Debug.Log(grads[0][1][3]);
 
-                // Calculate signals of last layer
-                for (int n = 0; n < signals[signals.Length - 1].Length; n++)
-                {
-                    signals[signals.Length - 1][n] = errors[n] * ReLuDerivative(actions[i][n]);
-                }
+        // Update model 
+        Optimize(dqn.mainNet.weightsMatrix, grads); // Minimize loss
 
-                // Calculate gradients of last layer
-                for (int neuron = 0; neuron < grads[grads.Length - 1].Length; neuron++)
-                {
-                    for (int pNeuron = 0; pNeuron < neurons[grads.Length - 2].Length; pNeuron++)
-                    {
-                        grads[grads.Length - 1][neuron][pNeuron] = neurons[grads.Length - 2][pNeuron] * signals[signals.Length - 1][neuron];
-                    }
-                }
+    }
+    public double[][][] CalculateGradients(double[][][] grads, double[][] signals, double[][] neurons, double[][][] parameters, double[][] actions, double[] errors, int i)
+    {
+        int l = parameters.Length - 1;
+        int m = neurons.Length - 3;
 
-                // Continue with all other layers
-                for (int layer = signals.Length - 2; layer > 0; layer--)
-                {
-                    double sum = 0;
-                    for (int neuron = 0; neuron < signals[layer].Length; neuron++)
-                    {
-                        for (int weights = 0; weights < parameters[layer + 1][neuron].Length; weights++)
-                        {
-                            sum += signals[layer + 1][neuron] * parameters[layer + 1][neuron][weights];
-                        }
-                        // Calculate signals
-                        signals[layer][neuron] = ReLuDerivative(neurons[layer][neuron]) * sum;
-                    }
-                }
-                for (int layer = grads.Length - 2; layer >= 0; layer--)
-                {
-                    //for (int neuron = 0; neuron < grads[grads.Length - 2].Length; neuron++)
-                    //{ 
-                    //    // Calculate weight gradients
-                    //    for (int pNeuron = 0; pNeuron < neurons[lay - 1].Length; pNeuron++)
-                    //    {
-                    //        grads[lay][neuron][pNeuron] = neurons[lay - 1][pNeuron] * signals[signals.Length - 1][neuron];
-                    //    }
-                    //}
-                }
+        // Calculate signals of last neuron layer
+        for (int n = 0; n < signals[signals.Length - 1].Length; n++)
+        {
+            signals[signals.Length - 1][n] = errors[n] * ReLuDerivative(actions[i][n]);
+        }
+
+        // Calculate gradients of last weights layer
+        for (int neuron = 0; neuron < grads[grads.Length - 1].Length; neuron++)
+        {
+            for (int pNeuron = 0; pNeuron < neurons[grads.Length - 2].Length; pNeuron++)
+            {
+                grads[grads.Length - 1][neuron][pNeuron] += neurons[grads.Length - 2][pNeuron] * signals[signals.Length - 1][neuron];
             }
         }
 
-        // Update model
-        return Optimize(cost, dqn.mainNet.weightsMatrix, dqn.mainNet.gradients); // Minimize loss
-    }
+        // Continue with all other layers
+        for (int layer = signals.Length - 2; layer > 0; layer--) // Iterate through all the neuron layers beginning with second to last
+        {
+            double sum = 0;
 
+            for (int currentNode = 0; currentNode < signals[layer].Length; currentNode++) // Iterate through all the neurons in the layer
+            {
+                for (int pn = 0; pn < parameters[l].Length; pn++)
+                {
+                    for (int nextNode = 0; nextNode < signals[layer + 1].Length; nextNode++) // Iterate through the neurons in the next layer (Represents outbound weight/node pairs)
+                    {
+                        sum += signals[layer + 1][nextNode] * parameters[l][layer + 1][pn];
+                    }
+                }
+            }
+            for (int node = 0; node < signals[layer + 1].Length; node++)
+            {
+                // Calculate signals
+                signals[layer][node] = ReLuDerivative(neurons[layer][node]) * sum;
+            }
+            l--;
+        }
+
+        // Calculate weight gradients
+        for (int layer = grads.Length - 2; layer >= 0; layer--)
+        {
+            for (int neuron = 0; neuron < grads[layer].Length; neuron++)
+            {
+                for (int pNeuron = 0; pNeuron < neurons[m].Length; pNeuron++)
+                {
+                    grads[layer][neuron][pNeuron] += neurons[m][pNeuron] * signals[m][neuron];
+                }
+            }
+            m--;
+        }
+        return grads;
+    }
     public double[] CalculateErrors(double[][] targs, double[][] acts, int index)
     {
         double[] errs = new double[actionQty]; 
@@ -377,7 +392,7 @@ public class Agent : MonoBehaviour
     }
 
     // TODO: Optimize function
-    public double[][][] Optimize(double loss, double[][][] parameters, double[][][] gradients) // This function will return the updated weights
+    public double[][][] Optimize(double[][][] parameters, double[][][] gradients) // This function will return the updated weights
     {
         if (t == 0)
         {
@@ -398,8 +413,9 @@ public class Agent : MonoBehaviour
                 {
                     for (int weight = 0; weight < parameters[layer][neuron].Length; weight++)
                     {
-                        firstMoment[layer][neuron][weight] = beta1 * firstMoment[layer][neuron][weight] + (1 - beta1) * gradients[layer][neuron][weight];
-                        secondMoment[layer][neuron][weight] = beta2 * secondMoment[layer][neuron][weight] + (1 - beta2) * Math.Pow(gradients[layer][neuron][weight], 2);
+                        double gradient = gradients[layer][neuron][weight];
+                        firstMoment[layer][neuron][weight] = beta1 * firstMoment[layer][neuron][weight] + (1 - beta1) * gradient;
+                        secondMoment[layer][neuron][weight] = beta2 * secondMoment[layer][neuron][weight] + (1 - beta2) * Math.Pow(gradient, 2);
 
                         // Calculate deltaWeight that is used to update the weight by the specified amount
                         double deltaWeight = learningRate * firstMoment[layer][neuron][weight] / (Math.Sqrt(secondMoment[layer][neuron][weight]) + epsilonHat);

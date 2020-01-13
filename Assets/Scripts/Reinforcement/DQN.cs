@@ -136,7 +136,7 @@ public class DQN : MonoBehaviour
             if (isTraining == true)
             {
                 // Train the agent
-                mainNet.weightsMatrix = agent.Train(agent.experienceBuffer, mainNet.weightsMatrix, mainNet.gradients, mainNet.nodeSignals, mainNet.neuronsMatrix); // **IN PROGRESS
+                agent.Train(agent.experienceBuffer, mainNet.weightsMatrix, mainNet.gradients, mainNet.nodeSignals, mainNet.neuronsMatrix); // **IN PROGRESS
             }
 
             // Keep track of time
