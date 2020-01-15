@@ -48,7 +48,7 @@ public class DQN : MonoBehaviour
     }
     public void InitQNets()
     {
-        layers = new int[] { 45, 45, 45, 7 };
+        layers = new int[] { 41, 41, 41, 7 };
         agent.actionQty = layers[layers.Length - 1];
         layerQty = layers.Length;
 

@@ -14,7 +14,7 @@ public class Objective : MonoBehaviour
             int pop = GameManager.instance.populationSize; // Set pop to the population size
 
             // Incentivize getting to objective first. 
-            // TODO: Make it logarithmic
+            // Can optionally make this logarithmic
             float scaledFitness = GameManager.instance.objectiveReward - ((GameManager.instance.objectiveReward / pop) * winners); 
             other.GetComponent<AIController>().net.AddFitness(scaledFitness); // Apply scaled fitness
             Destroy(other.gameObject); // Destroy the game object     

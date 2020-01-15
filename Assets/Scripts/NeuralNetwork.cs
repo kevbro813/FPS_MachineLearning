@@ -11,6 +11,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
     public float fitness; // Float value to track the fitness of the current network
     public double[][][] gradients;
     public double[][] nodeSignals;
+    public double bias = 1;
     public AIType aiType;
     public enum AIType { Random, Fittest, Children, Fit, Survivor, Saved }
 
@@ -49,7 +50,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
             int neuronsInPreviousLayer = neuralLayers[wLayer - 1];
 
             // For each neuron in the current layer...
-            for (int neuron = 0; neuron < neuronsMatrix[wLayer].Length; neuron++)
+            for (int neuron = 0; neuron < neuronsMatrix[wLayer].Length - 1; neuron++) // Do not include the bias node
             {
                 // Create a new float array for each neuron in the previous layer.
                 double[] weightGradients = new double[neuronsInPreviousLayer];
@@ -79,7 +80,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
 
         for (int layer = 0; layer < neuralLayers.Length; layer++) // For each neural layer...
         {
-            double[] nodes = new double[neuralLayers[layer]];
+            double[] nodes = new double[neuralLayers[layer]]; // TODO: Remove extra nodes for biases (unused)
             for (int node = 0; node < nodes.Length; node++)
             {
                 nodes[node] = 0;
@@ -103,6 +104,11 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
         }
 
         neuronsMatrix = neuronsList.ToArray(); // Convert the list of neurons to an array.
+
+        for (int layer = 0; layer < neuronsMatrix.Length - 1; layer++) // Loop through each layer stopping before output layer
+        {
+            neuronsMatrix[layer][neuronsMatrix[layer].Length - 1] = bias; // Set the last neuron in each layer to the bias value (default is 1)
+        }
     }
 
     // Creates a Weights Matrix [layer][neuron][weight]
@@ -123,7 +129,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
             int neuronsInPreviousLayer = neuralLayers[wLayer - 1];
 
             // For each neuron in the current layer...
-            for (int neuron = 0; neuron < neuronsMatrix[wLayer].Length; neuron++) 
+            for (int neuron = 0; neuron < neuronsMatrix[wLayer].Length - 1; neuron++) // Do not include the bias node
             {
                 // Create a new float array for each neuron in the previous layer.
                 double[] neuronWeights = new double[neuronsInPreviousLayer]; 
@@ -160,7 +166,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
         for (int layer = 1; layer < neuralLayers.Length; layer++)
         {
             // Iterate through each neuron in the current layer.
-            for (int neuron = 0; neuron < neuronsMatrix[layer].Length; neuron++)
+            for (int neuron = 0; neuron < neuronsMatrix[layer].Length - 1; neuron++) // Do not include the bias node
             {
                 double neuronValue = 0f; // Create a new value for the neuron. Changing this value can set a static bias. 
 
@@ -190,7 +196,7 @@ public class NeuralNetwork : IComparable<NeuralNetwork>
         for (int layer = 1; layer < neuralLayers.Length; layer++)
         {
             // Iterate through each neuron in the current layer.
-            for (int neuron = 0; neuron < neuronsMatrix[layer].Length; neuron++)
+            for (int neuron = 0; neuron < neuronsMatrix[layer].Length - 1; neuron++) // Do not include the bias node
             {
                 double neuronValue = 0f; // Create a new value for the neuron. Changing this value can set a static bias. 
 

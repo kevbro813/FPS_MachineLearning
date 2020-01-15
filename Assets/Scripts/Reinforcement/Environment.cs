@@ -13,7 +13,7 @@ public class Environment : MonoBehaviour
 
     // Required for DQN
     public int framesPerState = 5; // The number of frames per state
-    public int frameSize = 9; // The number of inputs that comprise each frame
+    public int frameSize = 8; // The number of inputs that comprise each frame
     public int stepCounter = 0; // TODO: Need to implement this
     public int epiMaxSteps = 1000; // Steps per episode
     public int stateSize;
@@ -98,7 +98,6 @@ public class Environment : MonoBehaviour
         next_Frame[5] = distancesToObstacles[5];
         next_Frame[6] = distancesToObstacles[6];
         next_Frame[7] = distancesToObstacles[7];
-        next_Frame[8] = 1; // Bias Node
 
         // ***Possible inputs
         // Distance to target (while in sight)
@@ -145,7 +144,7 @@ public class Environment : MonoBehaviour
         }
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
-            if (distancesToObstacles[i] < 1 && distancesToObstacles[i] != 0)
+            if (distancesToObstacles[i] < 3 && distancesToObstacles[i] != 0)
             {
                 reward--;
             }

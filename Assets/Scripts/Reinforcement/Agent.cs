@@ -169,8 +169,46 @@ public class Agent : MonoBehaviour
         }
         return randAction; // Return random actions array
     }
+    public double ReLuDerivative(double activation)
+    {
+        double deriv;
+        if (activation > 0)
+        {
+            deriv = 1;
+        }
+        else
+        {
+            deriv = 0;
+        }
+        return deriv;
+    }
 
-    ////////// EVERYTHING AFTER THIS IS BROKEN \\\\\\\\\\\
+    public double[][][] InitWeightMatrixZeros()
+    {
+        List<double[][]> layers = new List<double[][]>();
+
+        for (int layer = 1; layer < dqn.layers.Length; layer++)
+        {
+            List<double[]> neurons = new List<double[]>();
+
+            int neuronsInPreviousLayer = dqn.layers[layer - 1];
+
+            for (int neuron = 0; neuron < dqn.mainNet.neuronsMatrix[layer].Length; neuron++)
+            {
+                double[] weights = new double[neuronsInPreviousLayer];
+
+                for (int weight = 0; weight < neuronsInPreviousLayer; weight++)
+                {
+                    weights[weight] = 0;
+                }
+
+                neurons.Add(weights);
+            }
+
+            layers.Add(neurons.ToArray());
+        }
+        return layers.ToArray();
+    }
 
     // Train the Agent using the target neural network
     public void Train(Tuple<int, double[], float, bool>[] expBuffer, double[][][] parameters, double[][][] gradients, double[][] nSignals, double[][] neuronsMatrix) // Frame buffer, action, reward, isDone are passed in
@@ -178,101 +216,106 @@ public class Agent : MonoBehaviour
         // Get a random batch from the experience buffer
         Tuple<int, double[], float, bool>[] miniBatch = GetMiniBatch(expBuffer);
 
-        // Create array of states and nextStates
+        // Create arrays and matrices to hold tuple contents
         float[][] states = new float[miniBatchSize][];
         float[][] nextStates = new float[miniBatchSize][];
         double[][] actions = new double[miniBatchSize][];
         float[] rewards = new float[miniBatchSize];
         bool[] dones = new bool[miniBatchSize];
 
-        double[][][] grads = gradients;
-        double[][] signals = nSignals;
-        double[][] neurons = neuronsMatrix;
+        double[][][] grads = InitWeightMatrixZeros(); //gradients; // Create a matrix for the gradients
+        double[][] signals = nSignals; // Create a matrix for the node signals
+        double[][] neurons = neuronsMatrix; // Create an array that holds all the neuron values
 
         // Unpack Tuples
         for (int i = 0; i < miniBatchSize; i++)
         {
-            if (expBuffer[i] != null)
+            if (miniBatch[i] != null)
             {
-                states[i] = env.GetState(env.frameBuffer, miniBatch[i].Item1 - 1);
-                nextStates[i] = env.GetState(env.frameBuffer, miniBatch[i].Item1);
-                actions[i] = miniBatch[i].Item2;
-                rewards[i] = miniBatch[i].Item3;
-                dones[i] = miniBatch[i].Item4;
+                states[i] = env.GetState(env.frameBuffer, miniBatch[i].Item1 - 1); // Get state using the frameBuffer index stored as item one in the tuple, minus one for current state
+                nextStates[i] = env.GetState(env.frameBuffer, miniBatch[i].Item1); // Get the next state using the frameBuffer index
+                actions[i] = miniBatch[i].Item2; // Actions are stored as item 2 in the tuple
+                rewards[i] = miniBatch[i].Item3; // Rewards are item 3
+                dones[i] = miniBatch[i].Item4; // Done flags indicate if the state is a terminal state (boolean)
             }
         }
 
-        double[][] targets = CalculateTargets(nextStates, rewards, dones);  
-        double cost = Cost(actions, targets); // Calculate loss
+        double[][] targets = CalculateTargets(nextStates, rewards, dones); // Calculate the targets for the entire mini-batch
+        double cost = Cost(actions, targets); // Calculate loss using Huber Loss
+        
 
         for (int i = 0; i < miniBatchSize; i++) // For each tuple in the mini-batch
         {
-            if (targets[i] != null)
+            if (targets[i] != null) // Null check targets matrix
             {
-                double[] errors = CalculateErrors(targets, actions, i);
-                grads = CalculateGradients(grads, signals, neurons, parameters, actions, errors, i);
-            }          
+                double[] errors = CalculateErrors(targets, actions, i); // Calculate the errors for a single mini-batch set
+                grads = CalculateGradients(grads, signals, neurons, parameters, actions, errors, i); // Calculate gradients for a single mini-batch set
+            }
         }
-        Debug.Log(grads[0][1][3]);
 
+        Debug.Log(dqn.mainNet.weightsMatrix[2][1][2]);
         // Update model 
-        Optimize(dqn.mainNet.weightsMatrix, grads); // Minimize loss
+        dqn.mainNet.weightsMatrix = Optimize(dqn.mainNet.weightsMatrix, grads); // Minimize loss
 
     }
     public double[][][] CalculateGradients(double[][][] grads, double[][] signals, double[][] neurons, double[][][] parameters, double[][] actions, double[] errors, int i)
     {
-        int l = parameters.Length - 1;
-        int m = neurons.Length - 3;
+        int l = parameters.Length - 1; // Parameter matrix layer (Used to calculate last gradient layer)
+        int m = neurons.Length - 3; // Neuron/Signal matrix layer (Used to calculate all gradient layers besides the last layer)
+      
+        // Signals match up with neurons and grads match with parameters
 
-        // Calculate signals of last neuron layer
-        for (int n = 0; n < signals[signals.Length - 1].Length; n++)
+        // Calculate signals of last neuron layer (Error * Derivative)
+        for (int n = 0; n < signals[signals.Length - 1].Length; n++) // Loop through each neuron in the last signal layer
         {
-            signals[signals.Length - 1][n] = errors[n] * ReLuDerivative(actions[i][n]);
+            signals[signals.Length - 1][n] = -errors[n] * ReLuDerivative(actions[i][n]); // Set the signal value
         }
 
-        // Calculate gradients of last weights layer
-        for (int neuron = 0; neuron < grads[grads.Length - 1].Length; neuron++)
+        // Calculate gradients of last weights layer (last layer signal * previous layer neuron output)
+                                                                
+        // Loop through each neuron in the last layer (represents the outbound connection of a weight in the last layer, and is how they are grouped)
+        for (int neuron = 0; neuron < grads[grads.Length - 1].Length; neuron++) 
         {
-            for (int pNeuron = 0; pNeuron < neurons[grads.Length - 2].Length; pNeuron++)
+            // Loop through all the weights (each weight connects to a neuron in the previous layer, this is how the weights are indexed according to the previous neuron it is attached to)
+            for (int pNeuron = 0; pNeuron < grads[grads.Length - 1][neuron].Length; pNeuron++) 
             {
-                grads[grads.Length - 1][neuron][pNeuron] += neurons[grads.Length - 2][pNeuron] * signals[signals.Length - 1][neuron];
+                grads[grads.Length - 1][neuron][pNeuron] += neurons[neurons.Length - 2][pNeuron] * signals[signals.Length - 1][neuron]; // Gradient = (neuron output for current layer) * (next layer's signal)
             }
         }
 
         // Continue with all other layers
-        for (int layer = signals.Length - 2; layer > 0; layer--) // Iterate through all the neuron layers beginning with second to last
+
+        // Calculate signals
+        for (int layer = signals.Length - 2; layer > 0; layer--) // Iterate through all the signal layers beginning with second to last, stop on index 1 because index 0 signals are not required (this is the input layer)
         {
             double sum = 0;
-
-            for (int currentNode = 0; currentNode < signals[layer].Length; currentNode++) // Iterate through all the neurons in the layer
+            for (int node = 0; node < signals[layer + 1].Length; node++) // Iterate through each node in the signal layer
             {
-                for (int pn = 0; pn < parameters[l].Length; pn++)
+                // To calculate the sum of all 
+                for (int pn = 0; pn < parameters[l].Length; pn++) // Iterate through all the previous neurons
                 {
-                    for (int nextNode = 0; nextNode < signals[layer + 1].Length; nextNode++) // Iterate through the neurons in the next layer (Represents outbound weight/node pairs)
+                    for (int nextNode = 0; nextNode < signals[layer + 1].Length - 1; nextNode++) // Iterate through the neurons in the next layer (Represents outbound weight/node pairs), skip the bias node 
                     {
-                        sum += signals[layer + 1][nextNode] * parameters[l][layer + 1][pn];
+                    // Sum the products of the next layer signal "layer + 1" with the corresponding weight. The sum is used to calculate the signals in the current "layer"
+                    sum += parameters[l][nextNode][pn] * signals[layer + 1][nextNode]; 
                     }
                 }
+                signals[layer][node] = ReLuDerivative(neurons[layer][node]) * sum; // Multiply the sum by the derivative to get the node signal
             }
-            for (int node = 0; node < signals[layer + 1].Length; node++)
-            {
-                // Calculate signals
-                signals[layer][node] = ReLuDerivative(neurons[layer][node]) * sum;
-            }
-            l--;
+            l--; // decrement l for next layer iteration
         }
 
         // Calculate weight gradients
-        for (int layer = grads.Length - 2; layer >= 0; layer--)
+        for (int layer = grads.Length - 2; layer >= 0; layer--) // Begin with the second to last gradient layer. Important to include gradients for layer 0 with the >=.
         {
-            for (int neuron = 0; neuron < grads[layer].Length; neuron++)
-            {
-                for (int pNeuron = 0; pNeuron < neurons[m].Length; pNeuron++)
+            for (int neuron = 0; neuron < grads[layer].Length; neuron++) // Iterate through all the neurons in the gradient layer
+            { 
+                for (int pNeuron = 0; pNeuron < grads[layer][neuron].Length; pNeuron++) // Iterate through all the previous neurons which correspond to a weight
                 {
-                    grads[layer][neuron][pNeuron] += neurons[m][pNeuron] * signals[m][neuron];
+                    grads[layer][neuron][pNeuron] += neurons[m][pNeuron] * signals[m + 1][neuron]; // Gradient is the product of the neuron's output and the signal from the next layer (the two ends a weight is connected to)
                 }
             }
-            m--;
+            m--; // Decrement neuron/signal layer
         }
         return grads;
     }
@@ -285,10 +328,10 @@ public class Agent : MonoBehaviour
         }
         return errs;
     }
-    // TODO: Calculate Loss (AKA Cost) using Huber Loss function
+    // Calculate Loss (AKA Cost) using Huber Loss function
     public double Cost(double[][] actions, double[][] targets) // PYTHON: cost = tf.reduce_mean(tf.losses.huber_loss(self.G, selected_action_values))
     {
-        float delta = 1; // TODO: What is a valid delta value?
+        float delta = 1; // Delta is the threshold that will switch the cost function from linear to quadratic
         double[][] selected_Actions = new double[miniBatchSize][]; // Argmax of actions
         double[][] costs = new double[miniBatchSize][]; // Losses for each target/action in the batch
         double avgCost = 0; // Average loss for each action
@@ -391,7 +434,7 @@ public class Agent : MonoBehaviour
         return ts;
     }
 
-    // TODO: Optimize function
+    // Optimize function adjusts the parameters (neural network weights) using the adam optimizer algorithm
     public double[][][] Optimize(double[][][] parameters, double[][][] gradients) // This function will return the updated weights
     {
         if (t == 0)
@@ -403,68 +446,31 @@ public class Agent : MonoBehaviour
         if (!isConverged)
         {
             t++; // Increment timestep
-            double decay = 0.001;
 
-            learningRate = learningRate * (1 / (1 + decay * t)); //Math.Sqrt(1 - Math.Pow(beta2, t)) / (1 - Math.Pow(beta1, t)); // Calculate learning rate    
+            // TODO: Learning rate decay settings
+            //double decay = 0.001;
 
-            for (int layer = parameters.Length - 1; layer > 0; layer--) // ******   Iterate backwards through all the layers except the first one which is the input layer
+            //learningRate = learningRate * (1 / (1 + decay * t));// Math.Sqrt(1 - Math.Pow(beta2, t)) / (1 - Math.Pow(beta1, t)); // Calculate learning rate 
+
+            for (int layer = parameters.Length - 1; layer >= 0; layer--) // ******   Iterate backwards through all the layers except the first one which is the input layer
             { 
                 for (int neuron = 0; neuron < parameters[layer].Length; neuron++)
                 {
-                    for (int weight = 0; weight < parameters[layer][neuron].Length; weight++)
+                    for (int pNeuron = 0; pNeuron < parameters[layer][neuron].Length; pNeuron++)
                     {
-                        double gradient = gradients[layer][neuron][weight];
-                        firstMoment[layer][neuron][weight] = beta1 * firstMoment[layer][neuron][weight] + (1 - beta1) * gradient;
-                        secondMoment[layer][neuron][weight] = beta2 * secondMoment[layer][neuron][weight] + (1 - beta2) * Math.Pow(gradient, 2);
+                        double gradient = gradients[layer][neuron][pNeuron] / miniBatchSize; // TODO: Check if this is correct
+                        firstMoment[layer][neuron][pNeuron] = beta1 * firstMoment[layer][neuron][pNeuron] + (1 - beta1) * gradient;
+                        secondMoment[layer][neuron][pNeuron] = beta2 * secondMoment[layer][neuron][pNeuron] + (1 - beta2) * Math.Pow(gradient, 2);
 
                         // Calculate deltaWeight that is used to update the weight by the specified amount
-                        double deltaWeight = learningRate * firstMoment[layer][neuron][weight] / (Math.Sqrt(secondMoment[layer][neuron][weight]) + epsilonHat);
-                        parameters[layer][neuron][weight] = parameters[layer][neuron][weight] + deltaWeight; // Update weight
-                    }   
+                        double deltaWeight = learningRate * firstMoment[layer][neuron][pNeuron] / (Math.Sqrt(secondMoment[layer][neuron][pNeuron]) + epsilonHat);
+                        parameters[layer][neuron][pNeuron] = parameters[layer][neuron][pNeuron] - deltaWeight; // Update weight
+                    }
                 }
             }
             // TODO: Determine if neural networks have converged, if true then end loop
         }
         return parameters;
     }
-    public double ReLuDerivative(double activation)
-    {
-        double deriv;
-        if (activation > 0)
-        {
-            deriv = 1;
-        }
-        else
-        {
-            deriv = 0;
-        }
-        return deriv;
-    }
 
-    public double[][][] InitWeightMatrixZeros()
-    {
-        List<double[][]> layers = new List<double[][]>();
-
-        for (int layer = 1; layer < dqn.layers.Length; layer++)
-        {
-            List<double[]> neurons = new List<double[]>();
-
-            int neuronsInPreviousLayer = dqn.layers[layer - 1];
-
-            for (int neuron = 0; neuron < dqn.mainNet.neuronsMatrix[layer].Length; neuron++)
-            {
-                double[] weights = new double[neuronsInPreviousLayer];
-
-                for (int weight = 0; weight < neuronsInPreviousLayer; weight++)
-                {
-                    weights[weight] = 0;
-                }
-
-                neurons.Add(weights);
-            }
-
-            layers.Add(neurons.ToArray());
-        }
-        return layers.ToArray();
-    }
 }

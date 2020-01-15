@@ -189,8 +189,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c493cb2262dc094ea0a7fb01df86980, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 1
-  rotationSpeed: 1
+  moveSpeed: 5
+  rotationSpeed: 10
 --- !u!54 &7572914116102913964
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -223,10 +223,15 @@ MonoBehaviour:
   dqn: {fileID: 0}
   env: {fileID: 0}
   bufferIndex: 0
-  expBufferSize: 1000
+  expBufferSize: 10000
   actionQty: 0
   miniBatchSize: 32
   gamma: 0.95
+  learningRate: 0.001
+  beta1: 0.9
+  beta2: 0.999
+  epsilonHat: 0.00001
+  t: 0
   bufferCount: 0
 --- !u!114 &4522811249824510751
 MonoBehaviour:
@@ -241,15 +246,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   framesPerState: 5
-  frameSize: 9
+  frameSize: 8
   stepCounter: 0
-  epiMaxSteps: 1000
+  epiMaxSteps: 10000
   stateSize: 0
-  frameBufferSize: 100
+  frameBufferSize: 10000
   fbIndex: 0
   fbCount: 0
   isOnObjective: 0
-  distance: 5
+  distance: 20
   directions: []
   distancesToObstacles: []
   aiType: 
@@ -257,7 +262,7 @@ MonoBehaviour:
   targetDistance: 0
   maxViewDistance: 100
   fieldOfView: 45
-  collisionDetectRange: 1
+  collisionDetectRange: 10
   reward: []
   lastLocation: {x: 0, y: 0, z: 0}
   dqn: {fileID: 0}
@@ -276,15 +281,17 @@ MonoBehaviour:
   mainNet:
     neuralLayers: 
     fitness: 0
+    bias: 0
     aiType: 0
   targetNet:
     neuralLayers: 
     fitness: 0
+    bias: 0
     aiType: 0
   initialized: 0
   isTraining: 1
   episodeNum: 1
-  episodeMax: 10
+  episodeMax: 100
   env: {fileID: 0}
   agent: {fileID: 0}
   layers: 
@@ -294,3 +301,4 @@ MonoBehaviour:
   episodeReward: 0
   epiSteps: 0
   isDone: 0
+  layerQty: 0

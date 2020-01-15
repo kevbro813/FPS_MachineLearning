@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
                     neuralNets[i].SetType(NeuralNetwork.AIType.Fittest);
                 }
 
-                float averageFitness = totalFitness / populationSize; // TODO: Calculate the average fitness
+                float averageFitness = totalFitness / populationSize; // Calculate the average fitness
 
                 for (int i = 0; i < populationSize; i++)
                 {
@@ -167,6 +167,6 @@ public class GameManager : MonoBehaviour
             net.Mutate();
             neuralNets.Add(net);
         }
-        // TODO: Add ability to save and load neural nets
+        // TODO: Add ability to save and load individual neural nets
     }
 }
