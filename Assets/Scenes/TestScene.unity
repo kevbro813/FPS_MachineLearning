@@ -680,28 +680,9 @@ MonoBehaviour:
   aiObjectPrefab: {fileID: 5874489041997724355, guid: a3f7f5a6f3476674a9dfcf424ac7cdc1,
     type: 3}
   isTraining: 0
-  populationSize: 0
-  generationNumber: 0
-  neuralNets: []
-  savedNets: []
-  aiControllerList: []
   aiObjectsList: []
   spawnpoint: {fileID: 2059347241}
-  genLifespan: 10
-  averageFitness: 0
-  isLoadingNet: 0
   objective: {fileID: 970822766}
-  isSexual: 0
-  aiShell: {fileID: 0}
-  obstacleCollisionPenalty: -1000
-  objectiveReward: 10000
-  inSightReward: 100
-  distanceReward: 100
-  movingForwardReward: 100
-  movingLateralReward: 100
-  killBoxPenalty: -1000
-  rotationPenalty: -10
-  targetDistReward: 10
 --- !u!4 &426665352
 Transform:
   m_ObjectHideFlags: 0
@@ -1694,8 +1675,12 @@ PrefabInstance:
     m_TransformParent: {fileID: 1868246806}
     m_Modifications:
     - target: {fileID: 1971061415, guid: b02e0a68a7d4dd24f8f56568585cead0, type: 3}
-      propertyPath: epsilon_min
-      value: 0.05
+      propertyPath: netCopyRate
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 1971061415, guid: b02e0a68a7d4dd24f8f56568585cead0, type: 3}
+      propertyPath: epsChangeFactor
+      value: 250000
       objectReference: {fileID: 0}
     - target: {fileID: 5874489041997724355, guid: b02e0a68a7d4dd24f8f56568585cead0,
         type: 3}

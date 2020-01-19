@@ -63,19 +63,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\AIController.cs" />
-    <Compile Include="Assets\Scripts\AIPawn.cs" />
-    <Compile Include="Assets\Scripts\GameManager.cs" />
-    <Compile Include="Assets\Scripts\KillBox.cs" />
-    <Compile Include="Assets\Scripts\NeuralNetwork.cs" />
-    <Compile Include="Assets\Scripts\Objective.cs" />
-    <Compile Include="Assets\Scripts\ObserverController.cs" />
-    <Compile Include="Assets\Scripts\Reinforcement\Agent.cs" />
-    <Compile Include="Assets\Scripts\Reinforcement\DQN.cs" />
-    <Compile Include="Assets\Scripts\Reinforcement\Environment.cs" />
-    <Compile Include="Assets\Scripts\Reinforcement\Experimental.cs" />
-    <Compile Include="Assets\Scripts\SaveLoad.cs" />
-    <Compile Include="Assets\Scripts\UIManager.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\Agent.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\DQN.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\Environment.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\NeuralNetwork.cs" />
+    <Compile Include="Assets\Scripts\Features\SaveLoad.cs" />
+    <Compile Include="Assets\Scripts\Features\UIManager.cs" />
+    <Compile Include="Assets\Scripts\Game\AIPawn.cs" />
+    <Compile Include="Assets\Scripts\Game\GameManager.cs" />
+    <Compile Include="Assets\Scripts\Game\KillBox.cs" />
+    <Compile Include="Assets\Scripts\Game\Objective.cs" />
+    <Compile Include="Assets\Scripts\Observer\ObserverController.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>E:/Unity Projects/Game AI/FPS_MachineLearning/FPS_MachineLearning/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>

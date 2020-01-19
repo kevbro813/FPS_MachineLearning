@@ -92,8 +92,6 @@ GameObject:
   - component: {fileID: 5874489041997724356}
   - component: {fileID: 9059662200578306949}
   - component: {fileID: 7572914116102913964}
-  - component: {fileID: 8827922304102309342}
-  - component: {fileID: 4522811249824510751}
   - component: {fileID: 1971061415}
   m_Layer: 8
   m_Name: RLCapsule
@@ -207,65 +205,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 0
---- !u!114 &8827922304102309342
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5874489041997724355}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d6320296abcc8404ba9c8798a797c459, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  aiPawn: {fileID: 0}
-  dqn: {fileID: 0}
-  env: {fileID: 0}
-  bufferIndex: 0
-  expBufferSize: 10000
-  actionQty: 0
-  miniBatchSize: 32
-  gamma: 0.95
-  learningRate: 0.001
-  beta1: 0.9
-  beta2: 0.999
-  epsilonHat: 0.00001
-  t: 0
-  bufferCount: 0
---- !u!114 &4522811249824510751
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5874489041997724355}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df8f6b441c486e74c8f65441761e76cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  framesPerState: 5
-  frameSize: 8
-  stepCounter: 0
-  epiMaxSteps: 10000
-  stateSize: 0
-  frameBufferSize: 10000
-  fbIndex: 0
-  fbCount: 0
-  isOnObjective: 0
-  distance: 20
-  directions: []
-  distancesToObstacles: []
-  aiType: 
-  ttf: {fileID: 0}
-  targetDistance: 0
-  maxViewDistance: 100
-  fieldOfView: 45
-  collisionDetectRange: 10
-  reward: []
-  lastLocation: {x: 0, y: 0, z: 0}
-  dqn: {fileID: 0}
 --- !u!114 &1971061415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -282,23 +221,49 @@ MonoBehaviour:
     neuralLayers: 
     fitness: 0
     bias: 0
-    aiType: 0
+    t: 0
   targetNet:
     neuralLayers: 
     fitness: 0
     bias: 0
-    aiType: 0
-  initialized: 0
-  isTraining: 1
-  episodeNum: 1
-  episodeMax: 100
-  env: {fileID: 0}
-  agent: {fileID: 0}
+    t: 0
+  env:
+    reward: []
+    distancesToObstacles: []
+    targetDistance: 0
+    fbIndex: 0
+    fbCount: 0
+    isOnObjective: 0
+  agent:
+    bufferIndex: 0
+    bufferCount: 0
   layers: 
+  episodeMax: 100
+  framesPerState: 5
+  frameBufferSize: 2000
+  epiMaxSteps: 1000
   epsilon: 1
-  epsilon_min: 0.1
-  epsilon_change: 0
-  episodeReward: 0
+  epsilonMin: 0.1
+  epsChangeFactor: 500000
+  expBufferSize: 1000
+  miniBatchSize: 32
+  gamma: 0.95
+  learningRate: 0.001
+  beta1: 0.9
+  beta2: 0.999
+  epsilonHat: 0.00001
+  stepCounter: 0
+  episodeNum: 1
   epiSteps: 0
   isDone: 0
+  isTraining: 1
+  isConverged: 0
+  actionQty: 0
   layerQty: 0
+  stateSize: 0
+  frameSize: 8
+  epsilonChange: 0
+  episodeReward: 0
+  maxViewDistance: 100
+  fieldOfView: 45
+  collisionDetectRange: 10
