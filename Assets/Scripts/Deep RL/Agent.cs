@@ -113,7 +113,9 @@ public class Agent
     // TODO: Softmax action outputs
     public double[] SoftmaxAction(double[] action) 
     {
-        return action;
+        double[] softAction = action;
+
+        return softAction;
     }
     // TODO: Sigmoid action outputs
     public double[] SigmoidAction(double[] action)
