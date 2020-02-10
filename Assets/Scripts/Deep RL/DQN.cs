@@ -15,6 +15,10 @@ public class DQN : MonoBehaviour
     public Agent agent;
     [Space(10)]
 
+    [Header("Activation Functions")]
+    public string hiddenActivation = "relu";
+    public string outputActivation = "softmax";
+
     [Header("Hyperparameters")]
     public int[] layers; // TODO: Make this available to change in inspector
     public int episodeMax;
@@ -28,17 +32,24 @@ public class DQN : MonoBehaviour
     public int miniBatchSize; // Size of the mini-batch used to train the agent
     public int netCopyRate;
     // Research the following settings
-    public float gamma; // TODO: What should gamma be set to?
+    public float gamma; // TODO: What should gamma be set to?   
     public double learningRate;
     public float beta1;
     public float beta2;
     public double epsilonHat; // I have seen set between 10^-8 and 10^-5 (AKA 1e-8 and 1e-5), also 1 or 0.1 have been suggested
+    public double gradientThreshold;
     [Space(10)]
 
     [Header("Counters")]
-    public int stepCounter;
+    public int epochs;
     public int episodeNum;
     public int epiSteps;
+    public int targetSteps;
+    public int mainSteps;
+    [Space(10)]
+
+    [Header("Reward")]
+    public float episodeReward;
     [Space(10)]
 
     [Header("State Booleans")]
@@ -52,26 +63,24 @@ public class DQN : MonoBehaviour
     public int layerQty; // Number of layers
     public int stateSize; // Number of frames in a state
     public int frameSize; // The number of inputs that comprise each frame
+    public double currentLearningRate;
     public float epsilonChange; // This is the rate at which the value of epsilon will reduce each update
-    [Space(10)]
-
-    [Header("Reward")]
-    public float episodeReward;
     [Space(10)]
 
     [Header("Environment Settings")]
     public float maxViewDistance;
     public float fieldOfView;
     public float collisionDetectRange;
-
+    public UIManager ui;
     private void Start()
     {
         agent = new Agent();
         env = new Environment();
         InitQNets();
-        env.InitEnv(GetComponent<Transform>(), this);
         agent.InitAgent(GetComponent<AIPawn>(), this);
-
+        env.InitEnv(GetComponent<Transform>(), this);
+        ui = GameManager.instance.ui;
+        LoadSettings();
         // Initialize variables to starting values
         isDone = false; 
         isConverged = false;
@@ -80,18 +89,43 @@ public class DQN : MonoBehaviour
         episodeReward = 0;
         epiSteps = 0;
         epsilon = 1.0f;
-        stepCounter = 0;
+        epochs = 0;
+        targetSteps = 0;
+        mainSteps = 0;
         epsilonChange = (epsilon - epsilonMin) / epsChangeFactor;
-        frameSize = (layers[0] - 1) / framesPerState;
+        frameSize = layers[0] / framesPerState;
         stateSize = frameSize * framesPerState;
     }
     private void FixedUpdate()
     {
         RunGame();
     }
+    public void LoadSettings()
+    {
+        episodeMax = int.Parse(ui.maxEpsisodeIpt.text);
+        epiMaxSteps = int.Parse(ui.stepsEpsIpt.text);
+        framesPerState = int.Parse(ui.frameStateIpt.text);
+        frameBufferSize = int.Parse(ui.frameBufferIpt.text);
+        epsilon = float.Parse(ui.epsilonIpt.text);
+        epsilonMin = float.Parse(ui.epsMinIpt.text);
+        epsilonChange = float.Parse(ui.epsChangeIpt.text);
+        expBufferSize = int.Parse(ui.expBufferSizeIpt.text);
+        miniBatchSize = int.Parse(ui.miniBatchInpt.text);
+        netCopyRate = int.Parse(ui.netCopyRateIpt.text);
+        gamma = float.Parse(ui.gammaIpt.text);
+        learningRate = double.Parse(ui.learningRateIpt.text);
+        beta1 = float.Parse(ui.beta1Ipt.text);
+        beta2 = float.Parse(ui.beta2Ipt.text);
+        epsilonHat = double.Parse(ui.epsHatIpt.text);
+        gradientThreshold = double.Parse(ui.gradientThreshIpt.text);
+        maxViewDistance = float.Parse(ui.maxViewIpt.text);
+        fieldOfView = float.Parse(ui.fovIpt.text);
+        collisionDetectRange = float.Parse(ui.colDetectIpt.text);
+        Debug.Log("Settings Loaded");
+    }
     public void InitQNets()
     {
-        layers = new int[] { 41, 41, 41, 7 };
+        layers = new int[] { 36, 36, 36, 7 };
         actionQty = layers[layers.Length - 1];
         layerQty = layers.Length;
 
@@ -102,7 +136,7 @@ public class DQN : MonoBehaviour
     }
     public void RunGame()
     {
-        if (episodeNum <= episodeMax)
+        if (episodeNum < episodeMax)
         {
             isDone = false;
         }
@@ -120,7 +154,7 @@ public class DQN : MonoBehaviour
         if (!isDone)
         {
             // Copy weights from main to target network periodically
-            if (stepCounter % netCopyRate == 0)
+            if (epochs % netCopyRate == 0)
             {
                 targetNet = mainNet;
             }
@@ -129,9 +163,9 @@ public class DQN : MonoBehaviour
             float[] currentState = env.GetState(env.frameBuffer, env.fbIndex);
 
             // Perform the action
-            double[] currentAction = agent.PerformAction(currentState, epsilon);
+            double[] currentAction = agent.PerformAction(currentState, epsilon, actionQty);
 
-            stepCounter++; // Increment total steps
+            epochs++; // Increment total steps
             epiSteps++; // Increment steps in episode
 
             if (epiSteps >= epiMaxSteps)
@@ -159,7 +193,7 @@ public class DQN : MonoBehaviour
             if (isTraining == true && isConverged == false)
             {
                 // Train the agent
-                isConverged = mainNet.Train(agent.experienceBuffer, mainNet.weightsMatrix, mainNet.neuronsMatrix, this, env, agent);
+                isConverged = mainNet.Train(agent.experienceBuffer, mainNet.weightsMatrix, mainNet.neuronsSums, this, env, agent);
             }
 
             // Recalculate epsilon

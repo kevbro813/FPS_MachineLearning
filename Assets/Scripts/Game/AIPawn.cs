@@ -7,7 +7,7 @@ public class AIPawn : MonoBehaviour
     private Transform tf;
     public float moveSpeed = 10f;
     public float rotationSpeed = 10f;
-    private void Start()
+    private void Awake()
     {
         tf = GetComponent<Transform>(); 
     }

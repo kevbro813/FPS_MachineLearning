@@ -8,14 +8,14 @@ public class Objective : MonoBehaviour
     {
         if (col.gameObject.CompareTag("Agent"))
         {
-            //col.GetComponent<DQN>().env.isOnObjective = true;
+            col.GetComponent<DQN>().env.isOnObjective = true;
         }
     }
     private void OnTriggerExit(Collider col)
     {
         if (col.gameObject.CompareTag("Agent"))
         {
-            //col.GetComponent<DQN>().env.isOnObjective = false;
+            col.GetComponent<DQN>().env.isOnObjective = false;
         }
     }
 }

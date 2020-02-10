@@ -8,6 +8,8 @@ TagManager:
   - Objective
   - Obstacle
   - Agent
+  - AdminMenu
+  - UIManager
   layers:
   - Default
   - TransparentFX

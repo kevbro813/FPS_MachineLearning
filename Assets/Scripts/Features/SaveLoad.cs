@@ -5,8 +5,9 @@ using System.IO;
 
 public static class SaveLoad
 {
-    public static List<List<NeuralNetwork>> savedNetworks = new List<List<NeuralNetwork>>();
-    public static void SaveNet(string fileName)
+    public static List<NeuralNetwork> savedNetworks = new List<NeuralNetwork>();
+
+    public static void SaveNet(string fileName, DQN dqn)
     {
         if (File.Exists(Path.Combine(Application.persistentDataPath, fileName)))
         {
@@ -14,8 +15,8 @@ public static class SaveLoad
         }
         else
         {
-            //List<NeuralNetwork> nets = DQN.mainNet;
-            //savedNetworks.Add(nets);
+            NeuralNetwork nets = dqn.mainNet;
+            savedNetworks.Add(nets);
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
             bf.Serialize(file, savedNetworks);
@@ -23,14 +24,14 @@ public static class SaveLoad
             Debug.Log("Save Network");
         }
     }
-    public static void LoadNet(string fileName)
+    public static void LoadNet(string fileName, DQN dqn)
     {
         if (File.Exists(Path.Combine(Application.persistentDataPath, fileName)))
         {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
-            savedNetworks = (List<List<NeuralNetwork>>)bf.Deserialize(file);
-            //DQN.mainNet = savedNetworks[savedNetworks.Count - 1];
+            savedNetworks = (List<NeuralNetwork>)bf.Deserialize(file);
+            dqn.mainNet = savedNetworks[savedNetworks.Count - 1];
             file.Close();
             Debug.Log("Load Network");
         }

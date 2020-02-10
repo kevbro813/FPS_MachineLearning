@@ -25,36 +25,36 @@ public class Agent
         dqn = d;
         int seed = DateToInt(DateTime.Now);
         UnityEngine.Random.InitState(seed);
-        experienceBuffer = new Tuple<int, double[], float, bool>[dqn.expBufferSize];
+        experienceBuffer = new Tuple<int, double[], float, bool>[d.expBufferSize];
         bufferIndex = 0;
         bufferCount = 0;
     }
 
     // Get an action based on state, or small chance (epsilon) for a random action
-    public double[] EpsilonGreedy(float[] state, float eps) // States are passed to neural network and returns action
+    public double[] EpsilonGreedy(float[] state, float eps, int actQty) // States are passed to neural network and returns action
     {
         // The probability for a random action is based on epsilon. Epsilon will gradually reduce which means the agent's behavior will become less random over time. *Exploration vs. Exploitation
         if (UnityEngine.Random.value < eps)
         {
             // Random action
             Debug.Log("Explore");
-            return RandomAction();
+            return dqn.mainNet.SoftmaxAction(RandomAction(actQty));
         }
         else
         {
             // Action via neural net
             Debug.Log("Exploit");
-            return dqn.mainNet.FeedForward(state);
+            return dqn.mainNet.FeedForward(state, dqn.mainNet.neuralLayers, dqn.hiddenActivation, dqn.outputActivation, dqn.mainNet.neuronsActivated, dqn.mainNet.neuronsSums, dqn.mainNet.weightsMatrix, true, dqn);
         }
     }
     // Performs an action based on inputs from a boolean array
-    public double[] PerformAction(float[] state, float eps)
+    public double[] PerformAction(float[] state, float eps, int actQty)
     {
         // Input the state and return an action using Epsilon Greedy function (Explore and Exploit)
-        double[] action = EpsilonGreedy(state, eps);
+        double[]  action = EpsilonGreedy(state, eps, actQty);
 
         // Convert action to binary which is used by the pawn
-        bool[] bAction = BinaryAction(action); 
+        bool[] bAction = BinaryAction(action);
 
         // Accept action outputs and apply them to respective pawn functions
         aiPawn.MoveForward(bAction[0]);
@@ -71,9 +71,9 @@ public class Agent
     // The strongest action will be true, the rest will be false. Used to move the agent
     public bool[] BinaryAction(double[] action)
     {
-        bool[] bAction = new bool[dqn.actionQty];
+        bool[] bAction = new bool[action.Length];
         int indexMax = 0;
-        for (int i = 0; i < dqn.actionQty - 1; i++)
+        for (int i = 0; i < bAction.Length - 1; i++)
         {
             if (action[indexMax] > action[i + 1])
             {
@@ -89,44 +89,11 @@ public class Agent
         }
         return bAction;
     }
-    // Returns the strongest action, the rest will be set to 0. Used for selected_Actions and QValues
-    public double[] AxisMaxAction(double[] action)
-    {
-        double[] mAction = new double[dqn.actionQty];
-        int indexMax = 0;
-        for (int i = 0; i < dqn.actionQty - 1; i++)
-        {
-            if (action[indexMax] > action[i + 1])
-            {
-                mAction[indexMax] = action[indexMax];
-                mAction[i + 1] = 0;
-            }
-            else
-            {
-                mAction[indexMax] = 0;
-                mAction[i + 1] = action[i + 1];
-                indexMax = i + 1;
-            }   
-        }
-        return mAction;
-    }
-    // TODO: Softmax action outputs
-    public double[] SoftmaxAction(double[] action) 
-    {
-        double[] softAction = action;
-
-        return softAction;
-    }
-    // TODO: Sigmoid action outputs
-    public double[] SigmoidAction(double[] action)
-    {
-        return action;
-    }
 
     // Create a random action
-    public double[] RandomAction()
+    public double[] RandomAction(int actQty)
     {
-        double[] randAction = new double[dqn.actionQty]; // Create a new float array to hold the action values
+        double[] randAction = new double[actQty]; // Create a new float array to hold the action values
 
         // Loop through the array and add a random number to each index
         for (int i = 0; i < randAction.Length; i++)
@@ -149,9 +116,9 @@ public class Agent
         bufferIndex = (bufferIndex + 1) % dqn.expBufferSize;
     }
     // Get a mini-batch of tuples from the experience buffer to train the agent
-    public Tuple<int, double[], float, bool>[] GetMiniBatch(Tuple<int, double[], float, bool>[] exp)
+    public Tuple<int, double[], float, bool>[] GetMiniBatch(Tuple<int, double[], float, bool>[] exp, int mbs)
     {
-        Tuple<int, double[], float, bool>[] mb = new Tuple<int, double[], float, bool>[dqn.miniBatchSize];
+        Tuple<int, double[], float, bool>[] mb = new Tuple<int, double[], float, bool>[mbs];
 
         for (int i = 0; i < mb.Length; i++) // Loop through the mini-batch tuple
         {

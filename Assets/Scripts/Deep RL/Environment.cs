@@ -16,6 +16,7 @@ public class Environment
     private Vector3[] directions;
     public float[] distancesToObstacles;  
     public float targetDistance;
+    public float rotation;
     public int fbIndex;
     public int fbCount;
     public bool isOnObjective = false;
@@ -68,6 +69,7 @@ public class Environment
         next_Frame[5] = distancesToObstacles[5];
         next_Frame[6] = distancesToObstacles[6];
         next_Frame[7] = distancesToObstacles[7];
+        next_Frame[8] = tf.transform.eulerAngles.y;
 
         // TODO: Possible inputs
         // Distance to target (while in sight)
@@ -110,14 +112,18 @@ public class Environment
         if (isOnObjective)
         {
             Debug.Log("Reward!");
-            reward++;
+            reward += 10;
         }
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
-            if (distancesToObstacles[i] < 3 && distancesToObstacles[i] != 0)
+            if (distancesToObstacles[i] < 3)
             {
-                reward--;
+                reward -= (3 - distancesToObstacles[i]);
             }
+            //if (distancesToObstacles[i] >= 3)
+            //{
+            //    reward++;
+            //}
         }
         return reward;
     }

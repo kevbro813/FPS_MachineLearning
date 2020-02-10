@@ -10,7 +10,7 @@ public class ObserverController : MonoBehaviour
     private float currentX = 0f;
     private float currentY = 0f;
     private const float Y_ANGLE_MIN = 5.0f;
-    private const float Y_ANGLE_MAX = 50.0f;
+    private const float Y_ANGLE_MAX = 110.0f;
 
     [Header("Camera Variables")]
     public float camZoomDistance = 5.0f;
@@ -56,6 +56,15 @@ public class ObserverController : MonoBehaviour
             // Call functions to Move the observer
             ptf.Translate(Vector3.forward * inputVertical * camScrollSpeed * Time.deltaTime, Space.Self);
             ptf.Translate(Vector3.right * inputHorizontal * camScrollSpeed * Time.deltaTime, Space.Self);
+
+            if (Input.GetButtonDown("Admin"))
+            {   
+                GameManager.instance.isAdminMenu = !GameManager.instance.isAdminMenu;
+            }
+            if (Input.GetButtonDown("Pause"))
+            {
+                GameManager.instance.isPaused = !GameManager.instance.isPaused;
+            }
         }
     }
     private void LateUpdate()
