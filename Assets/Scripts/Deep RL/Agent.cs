@@ -11,6 +11,7 @@ public class Agent
     public Tuple<int, double[], float, bool>[] experienceBuffer; // Tuple that holds the Index of the last frame(used to calculate states), action, reward and done flag 
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
+    public bool isExploit = false;
 
     // Converts date to an int that can be used as the seed for RNG
     public int DateToInt(DateTime dateTime)
@@ -38,12 +39,21 @@ public class Agent
         {
             // Random action
             Debug.Log("Explore");
-            return dqn.mainNet.SoftmaxAction(RandomAction(actQty));
+            isExploit = false;
+            if (dqn.outputActivation == "selected")
+            {
+                return dqn.mainNet.SelectedActions(RandomAction(actQty));
+            }
+            else
+            {
+                return dqn.mainNet.SoftmaxAction(RandomAction(actQty));
+            }
         }
         else
         {
             // Action via neural net
             Debug.Log("Exploit");
+            isExploit = true;
             return dqn.mainNet.FeedForward(state, dqn.mainNet.neuralLayers, dqn.hiddenActivation, dqn.outputActivation, dqn.mainNet.neuronsActivated, dqn.mainNet.neuronsSums, dqn.mainNet.weightsMatrix, true, dqn);
         }
     }

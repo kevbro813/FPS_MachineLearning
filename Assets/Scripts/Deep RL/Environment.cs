@@ -120,10 +120,10 @@ public class Environment
             {
                 reward -= (3 - distancesToObstacles[i]);
             }
-            //if (distancesToObstacles[i] >= 3)
-            //{
-            //    reward++;
-            //}
+            if (distancesToObstacles[i] >= 3)
+            {
+                reward++;
+            }
         }
         return reward;
     }

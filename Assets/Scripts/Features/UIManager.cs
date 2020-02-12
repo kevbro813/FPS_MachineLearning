@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class UIManager : MonoBehaviour
 {
     public string fileName;
+    public string settingsName;
     public InputField fileIpt;
     public InputField maxEpsisodeIpt;
     public InputField stepsEpsIpt;
@@ -36,85 +37,211 @@ public class UIManager : MonoBehaviour
     public Text epsilonMin;
     public Text episodeSteps;
     public Text episodeMaxSteps;
-
+    private bool isUpdate = true;
     public DQN dqn;
+    public GameObject resumeButton;
+    public GameObject saveButton;
 
     // Start is called before the first frame update
     void Start()
     {
-        maxEpsisodeIpt.text = "1000";
-        stepsEpsIpt.text = "1000";
-        frameStateIpt.text = "4";
-        frameBufferIpt.text = "10000";
-        epsilonIpt.text = "1";
-        epsMinIpt.text = "0.1";
-        epsChangeIpt.text = "500000";
-        expBufferSizeIpt.text = "5000";
-        miniBatchInpt.text = "32";
-        netCopyRateIpt.text = "100";
-        gammaIpt.text = "0.95";
-        learningRateIpt.text = "0.000000001";
-        beta1Ipt.text = "0.9";
-        beta2Ipt.text = "0.999";
-        epsHatIpt.text = "0.000001";
-        gradientThreshIpt.text = "1";
-        maxViewIpt.text = "100";
-        fovIpt.text = "45";
-        colDetectIpt.text = "10";
+        UpdateSettingsDisplay();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (dqn != null)
+        if (dqn != null && !GameManager.instance.adminMenu.activeSelf)
         {
-            episodeNumber.text = dqn.episodeNum.ToString();
-            maxEpisodes.text = dqn.episodeMax.ToString();
-            epochs.text = dqn.epochs.ToString();
-            totalReward.text = dqn.episodeReward.ToString();
-            currentReward.text = dqn.episodeReward.ToString();
-            epsilon.text = dqn.epsilon.ToString();
-            epsilonMin.text = dqn.epsilonMin.ToString();
-            episodeSteps.text = dqn.epiSteps.ToString();
-            episodeMaxSteps.text = dqn.epiMaxSteps.ToString();
+            UpdateHUD();
+            isUpdate = true;
+        }
+        else if(GameManager.instance.adminMenu.activeSelf && isUpdate)
+        {
+            UpdateSettingsDisplay();
+            if (GameManager.instance.isAgentLoaded)
+            {
+                resumeButton.SetActive(true);
+                saveButton.SetActive(true);
+            }
+            else
+            {
+                resumeButton.SetActive(false);
+                saveButton.SetActive(false);
+            }
+            isUpdate = false;
         }
     }
-
-    public void LoadAgent()
+    public void UpdateSettingsDisplay()
     {
-        if (GameManager.instance.dqn != null)
-        {
-            Destroy(GameManager.instance.agentObjectsList[0]);
-        }
+        maxEpsisodeIpt.text = GameManager.instance.settings.episodeMax.ToString();
+        stepsEpsIpt.text = GameManager.instance.settings.epiMaxSteps.ToString();
+        frameStateIpt.text = GameManager.instance.settings.framesPerState.ToString();
+        frameBufferIpt.text = GameManager.instance.settings.frameBufferSize.ToString();
+        epsilonIpt.text = GameManager.instance.settings.epsilon.ToString();
+        epsMinIpt.text = GameManager.instance.settings.epsilonMin.ToString();
+        epsChangeIpt.text = GameManager.instance.settings.epsChangeFactor.ToString();
+        expBufferSizeIpt.text = GameManager.instance.settings.expBufferSize.ToString();
+        miniBatchInpt.text = GameManager.instance.settings.miniBatchSize.ToString();
+        netCopyRateIpt.text = GameManager.instance.settings.netCopyRate.ToString();
+        gammaIpt.text = GameManager.instance.settings.gamma.ToString();
+        learningRateIpt.text = GameManager.instance.settings.learningRate.ToString();
+        beta1Ipt.text = GameManager.instance.settings.beta1.ToString();
+        beta2Ipt.text = GameManager.instance.settings.beta2.ToString();
+        epsHatIpt.text = GameManager.instance.settings.epsilonHat.ToString();
+        gradientThreshIpt.text = GameManager.instance.settings.gradientThreshold.ToString();
+        maxViewIpt.text = GameManager.instance.settings.maxViewDistance.ToString();
+        fovIpt.text = GameManager.instance.settings.fieldOfView.ToString();
+        colDetectIpt.text = GameManager.instance.settings.collisionDetectRange.ToString();
+    }
+    public void UpdateAgentName()
+    {
+        GameManager.instance.settings.agentName = fileIpt.text;
+    }
+    public void UpdateEpiMax()
+    {
+        GameManager.instance.settings.episodeMax = int.Parse(maxEpsisodeIpt.text);
+    }
+    public void UpdateEpiMaxSteps()
+    {
+        GameManager.instance.settings.epiMaxSteps = int.Parse(stepsEpsIpt.text);
+    }
+    public void UpdateFramesPerState()
+    {
+        GameManager.instance.settings.framesPerState = int.Parse(frameStateIpt.text);
+    }
+    public void UpdateFrameBufferSize()
+    {
+        GameManager.instance.settings.frameBufferSize = int.Parse(frameBufferIpt.text);
+    }
+    public void UpdateEpsilon()
+    {
+        GameManager.instance.settings.epsilon = float.Parse(epsilonIpt.text);
+    }
+    public void UpdateEpsilonMin()
+    {
+        GameManager.instance.settings.epsilonMin = float.Parse(epsMinIpt.text);
+    }
+    public void UpdateEpsChangeFactor()
+    {
+        GameManager.instance.settings.epsChangeFactor = float.Parse(epsChangeIpt.text);
+    }
+    public void UpdateExpBufferSize()
+    {
+        GameManager.instance.settings.expBufferSize = int.Parse(expBufferSizeIpt.text);
+    }
+    public void UpdateMiniBatchSize()
+    {
+        GameManager.instance.settings.miniBatchSize = int.Parse(miniBatchInpt.text);
+    }
+    public void UpdateNetCopyRate()
+    {
+        GameManager.instance.settings.netCopyRate = int.Parse(netCopyRateIpt.text);
+    }
+    public void UpdateGamma()
+    {
+        GameManager.instance.settings.gamma = float.Parse(gammaIpt.text);
+    }
+    public void UpdateLearningRate()
+    {
+        GameManager.instance.settings.learningRate = double.Parse(learningRateIpt.text);
+    }
+    public void UpdateBeta1()
+    {
+        GameManager.instance.settings.beta1 = float.Parse(beta1Ipt.text);
+    }
+    public void UpdateBeta2()
+    {
+        GameManager.instance.settings.beta2 = float.Parse(beta2Ipt.text);
+    }
+    public void UpdateEpsilonHat()
+    {
+        GameManager.instance.settings.epsilonHat = double.Parse(epsHatIpt.text);
+    }
+    public void UpdateGradientThreshold()
+    {
+        GameManager.instance.settings.gradientThreshold = double.Parse(gradientThreshIpt.text);
+    }
+    public void UpdateMaxViewDistance()
+    {
+        GameManager.instance.settings.maxViewDistance = float.Parse(maxViewIpt.text);
+    }
+    public void UpdateFoV()
+    {
+        GameManager.instance.settings.fieldOfView = float.Parse(fovIpt.text);
+    }
+    public void UpdateColDetectRange()
+    {
+        GameManager.instance.settings.collisionDetectRange = float.Parse(colDetectIpt.text);
+    }
+    public void UpdateHUD()
+    {
+        episodeNumber.text = dqn.episodeNum.ToString();
+        maxEpisodes.text = dqn.episodeMax.ToString();
+        epochs.text = dqn.epochs.ToString();
+        totalReward.text = dqn.totalReward.ToString();
+        currentReward.text = dqn.episodeReward.ToString();
+        epsilon.text = dqn.epsilon.ToString();
+        epsilonMin.text = dqn.epsilonMin.ToString();
+        episodeSteps.text = dqn.epiSteps.ToString();
+        episodeMaxSteps.text = dqn.epiMaxSteps.ToString();
+    }
+    public void ResumeGame()
+    {
         GameManager.instance.gameState = "continue";
-        GameManager.instance.SpawnAgent();
-        fileName = fileIpt.text;
+        SaveLoad.SaveSettings(settingsName);
+        GameManager.instance.dqn.LoadSettings();
+    }
+    public void SaveAgent()
+    {
+        fileName = fileIpt.text + "_e" + dqn.episodeNum;
+        settingsName = fileName + "_settings.gd";
         fileName = fileName + ".gd";
-        Debug.Log(fileName);
-        SaveLoad.LoadNet(fileName, GameManager.instance.dqn);
+        Debug.Log("Saving..." + fileName);
+        SaveLoad.SaveNet(fileName, GameManager.instance.dqn);
+        SaveLoad.SaveSettings(settingsName);
         dqn = GameManager.instance.dqn;
     }
-    public void NewAgent()
+    public void LoadAgent()
     {
         if (GameManager.instance.dqn != null)
         {
             Destroy(GameManager.instance.agentObjectsList[0]);
             GameManager.instance.agentObjectsList.Clear();
         }
-        GameManager.instance.gameState = "continue";
         GameManager.instance.SpawnAgent();
+        fileName = fileIpt.text;
+        settingsName = fileName + "_settings.gd";
+        fileName = fileName + ".gd";
+        Debug.Log("Loading..." + fileName);
+        SaveLoad.LoadNet(fileName, GameManager.instance.dqn);
+        SaveLoad.LoadSettings(settingsName);
+        UpdateSettingsDisplay();
         dqn = GameManager.instance.dqn;
     }
-    public void SaveAgent()
+    public void NewAgent()
     {
         fileName = fileIpt.text;
-        fileName = fileName + ".gd";
-        Debug.Log(fileName);
-        SaveLoad.SaveNet(fileName, GameManager.instance.dqn);
-        dqn = GameManager.instance.dqn;
-    }
-    public void ResumeGame()
-    {
-        GameManager.instance.gameState = "continue";
+        if (fileName == "")
+        {
+            Debug.Log("Please enter a valid name.");
+        }
+        else
+        {
+            if (GameManager.instance.dqn != null)
+            {
+                Destroy(GameManager.instance.agentObjectsList[0]);
+                GameManager.instance.agentObjectsList.Clear();
+            }
+            settingsName = fileName + "_new_settings.gd";
+            fileName = fileName + "_new.gd";
+            Debug.Log("New Game..." + fileName);
+
+            GameManager.instance.gameState = "continue";
+            GameManager.instance.SpawnAgent();
+            dqn = GameManager.instance.dqn;
+            SaveLoad.SaveNet(fileName, dqn);
+            SaveLoad.SaveSettings(settingsName);
+        }
     }
 }

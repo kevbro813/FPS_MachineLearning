@@ -111,4 +111,24 @@ public class Scrap : MonoBehaviour
     //{
     //    targetNormalized[lay][neu] = Normalize(nActs[lay][neu], dqn.targetSteps, isMainNet, lay, neu) + biases[lay][neu];
     //}
+
+    //GameManager.instance.settings.episodeMax = int.Parse(ui.maxEpsisodeIpt.text);
+    //GameManager.instance.settings.epiMaxSteps = int.Parse(ui.stepsEpsIpt.text);
+    //GameManager.instance.settings.framesPerState = int.Parse(ui.frameStateIpt.text);
+    //GameManager.instance.settings.frameBufferSize = int.Parse(ui.frameBufferIpt.text);
+    //GameManager.instance.settings.epsilon = float.Parse(ui.epsilonIpt.text);
+    //GameManager.instance.settings.epsilonMin = float.Parse(ui.epsMinIpt.text);
+    //GameManager.instance.settings.epsChangeFactor = float.Parse(ui.epsChangeIpt.text);
+    //GameManager.instance.settings.expBufferSize = int.Parse(ui.expBufferSizeIpt.text);
+    //GameManager.instance.settings.miniBatchSize = int.Parse(ui.miniBatchInpt.text);
+    //GameManager.instance.settings.netCopyRate = int.Parse(ui.netCopyRateIpt.text);
+    //GameManager.instance.settings.gamma = float.Parse(ui.gammaIpt.text);
+    //GameManager.instance.settings.learningRate = double.Parse(ui.learningRateIpt.text);
+    //GameManager.instance.settings.beta1 = float.Parse(ui.beta1Ipt.text);
+    //GameManager.instance.settings.beta2 = float.Parse(ui.beta2Ipt.text);
+    //GameManager.instance.settings.epsilonHat = double.Parse(ui.epsHatIpt.text);
+    //GameManager.instance.settings.gradientThreshold = double.Parse(ui.gradientThreshIpt.text);
+    //GameManager.instance.settings.maxViewDistance = float.Parse(ui.maxViewIpt.text);
+    //GameManager.instance.settings.fieldOfView = float.Parse(ui.fovIpt.text);
+    //GameManager.instance.settings.collisionDetectRange = float.Parse(ui.colDetectIpt.text);
 }

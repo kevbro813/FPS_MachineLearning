@@ -69,6 +69,7 @@
     <Compile Include="Assets\Scripts\Deep RL\NeuralNetwork.cs" />
     <Compile Include="Assets\Scripts\Deep RL\Scrap.cs" />
     <Compile Include="Assets\Scripts\Features\SaveLoad.cs" />
+    <Compile Include="Assets\Scripts\Features\Settings.cs" />
     <Compile Include="Assets\Scripts\Features\UIManager.cs" />
     <Compile Include="Assets\Scripts\Game\AIPawn.cs" />
     <Compile Include="Assets\Scripts\Game\GameManager.cs" />

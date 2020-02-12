@@ -231,7 +231,7 @@ public class NeuralNetwork
                 weightsMatrix = Optimize(weightsMatrix, grads, dqn); // Minimize loss
             }
         }
-        Debug.Log(weightsMatrix[0][2][3]);
+        //Debug.Log(weightsMatrix[0][2][3]);
         return false;
     }
     // Calculate Loss (AKA Cost) using Huber Loss function
@@ -713,7 +713,6 @@ public class NeuralNetwork
                         // Net B weight
                         weightValue = netB.weightsMatrix[layer][neuron][weight];
                     }
-
                     netC.weightsMatrix[layer][neuron][weight] = weightValue; // Set the weight
                 }
             }

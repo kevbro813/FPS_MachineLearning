@@ -1,10 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Runtime.Serialization.Formatters.Binary;
 using System;
 
 public class DQN : MonoBehaviour
 {
+    [Header("Identifying Info")]
+    public string agentName;
+    public int agentID;
+    [Space(10)]
+
     [Header("Neural Networks")]
     public NeuralNetwork mainNet;
     public NeuralNetwork targetNet;
@@ -16,8 +22,8 @@ public class DQN : MonoBehaviour
     [Space(10)]
 
     [Header("Activation Functions")]
-    public string hiddenActivation = "relu";
-    public string outputActivation = "softmax";
+    public string hiddenActivation;
+    public string outputActivation;
 
     [Header("Hyperparameters")]
     public int[] layers; // TODO: Make this available to change in inspector
@@ -44,12 +50,11 @@ public class DQN : MonoBehaviour
     public int epochs;
     public int episodeNum;
     public int epiSteps;
-    public int targetSteps;
-    public int mainSteps;
     [Space(10)]
 
     [Header("Reward")]
     public float episodeReward;
+    public float totalReward;
     [Space(10)]
 
     [Header("State Booleans")]
@@ -71,7 +76,17 @@ public class DQN : MonoBehaviour
     public float maxViewDistance;
     public float fieldOfView;
     public float collisionDetectRange;
-    public UIManager ui;
+    [Space(10)]
+
+    [Header("Other")]
+    public int autoSaveEpisode;
+
+    private UIManager ui;
+    private Transform tf;
+    private Material mat;
+    private Color red;
+    private Color white;
+
     private void Start()
     {
         agent = new Agent();
@@ -87,41 +102,57 @@ public class DQN : MonoBehaviour
         isTraining = true;
         episodeNum = 1;
         episodeReward = 0;
+        totalReward = 0;
         epiSteps = 0;
-        epsilon = 1.0f;
         epochs = 0;
-        targetSteps = 0;
-        mainSteps = 0;
         epsilonChange = (epsilon - epsilonMin) / epsChangeFactor;
         frameSize = layers[0] / framesPerState;
         stateSize = frameSize * framesPerState;
+        tf = GetComponent<Transform>();
+        mat = GetComponent<MeshRenderer>().material;
+        red = new Color(255, 0, 0); // Brighten when close to objective
+        white = new Color(255, 255, 255); // Brighten when close to objective
     }
     private void FixedUpdate()
     {
         RunGame();
     }
+    private void Update()
+    {
+        if (agent.isExploit)
+        {
+            mat.color = red;
+        }
+        else
+        {
+            mat.color = white;
+        }
+    }
     public void LoadSettings()
     {
-        episodeMax = int.Parse(ui.maxEpsisodeIpt.text);
-        epiMaxSteps = int.Parse(ui.stepsEpsIpt.text);
-        framesPerState = int.Parse(ui.frameStateIpt.text);
-        frameBufferSize = int.Parse(ui.frameBufferIpt.text);
-        epsilon = float.Parse(ui.epsilonIpt.text);
-        epsilonMin = float.Parse(ui.epsMinIpt.text);
-        epsilonChange = float.Parse(ui.epsChangeIpt.text);
-        expBufferSize = int.Parse(ui.expBufferSizeIpt.text);
-        miniBatchSize = int.Parse(ui.miniBatchInpt.text);
-        netCopyRate = int.Parse(ui.netCopyRateIpt.text);
-        gamma = float.Parse(ui.gammaIpt.text);
-        learningRate = double.Parse(ui.learningRateIpt.text);
-        beta1 = float.Parse(ui.beta1Ipt.text);
-        beta2 = float.Parse(ui.beta2Ipt.text);
-        epsilonHat = double.Parse(ui.epsHatIpt.text);
-        gradientThreshold = double.Parse(ui.gradientThreshIpt.text);
-        maxViewDistance = float.Parse(ui.maxViewIpt.text);
-        fieldOfView = float.Parse(ui.fovIpt.text);
-        collisionDetectRange = float.Parse(ui.colDetectIpt.text);
-        Debug.Log("Settings Loaded");
+        episodeMax = GameManager.instance.settings.episodeMax;
+        epiMaxSteps = GameManager.instance.settings.epiMaxSteps;
+        framesPerState = GameManager.instance.settings.framesPerState;
+        frameBufferSize = GameManager.instance.settings.frameBufferSize;
+        epsilon = GameManager.instance.settings.epsilon;
+        epsilonMin = GameManager.instance.settings.epsilonMin;
+        epsChangeFactor = GameManager.instance.settings.epsChangeFactor;
+        expBufferSize = GameManager.instance.settings.expBufferSize;
+        miniBatchSize = GameManager.instance.settings.miniBatchSize;
+        netCopyRate = GameManager.instance.settings.netCopyRate;
+        gamma = GameManager.instance.settings.gamma;
+        learningRate = GameManager.instance.settings.learningRate;
+        beta1 = GameManager.instance.settings.beta1;
+        beta2 = GameManager.instance.settings.beta2;
+        epsilonHat = GameManager.instance.settings.epsilonHat;
+        gradientThreshold = GameManager.instance.settings.gradientThreshold;
+        maxViewDistance = GameManager.instance.settings.maxViewDistance;
+        fieldOfView = GameManager.instance.settings.fieldOfView;
+        collisionDetectRange = GameManager.instance.settings.collisionDetectRange;
+
+        agentID = GameManager.instance.settings.agentID;
+        agentName = GameManager.instance.settings.agentName;
+        autoSaveEpisode = GameManager.instance.settings.autoSaveEpisode;
     }
     public void InitQNets()
     {
@@ -132,7 +163,7 @@ public class DQN : MonoBehaviour
         mainNet = new NeuralNetwork(layers);
         mainNet.Mutate();
 
-        targetNet= mainNet;
+        targetNet = mainNet;
     }
     public void RunGame()
     {
@@ -140,12 +171,19 @@ public class DQN : MonoBehaviour
         {
             isDone = false;
         }
-
+        if (episodeNum % autoSaveEpisode == 0) // Autosave feature
+        {
+            string fileName = agentName + "_AS_e" + episodeNum + ".gd";
+            string settingsName = agentName + "_AS_e" + episodeNum + "_settings.gd";
+            SaveLoad.SaveNet(fileName, this);
+            SaveLoad.SaveSettings(settingsName);
+            Debug.Log(fileName);
+        }
         if (episodeNum == episodeMax)
         {
             Debug.Log("Game Over.");
         }
-        RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.    
+        RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
         //episodes.Add(episode); // Add the score to the list of rewards, neural nets and other data. TODO: Sort functionality, Icomparable.
     }
     // Run one episode
@@ -172,7 +210,9 @@ public class DQN : MonoBehaviour
             {
                 episodeNum++;
                 isDone = true;
-                epiSteps = 0;     
+                epiSteps = 0;
+                episodeReward = 0;
+                tf.position = GameManager.instance.spawnpoint.position;
             }
 
             // Creates next frame
@@ -184,8 +224,9 @@ public class DQN : MonoBehaviour
             // Calculates the reward based on the state
             float currentReward = env.CalculateReward(nextFrame);
 
-            // Add current reward to the episode total
+            // Add current reward to the episode and total reward
             episodeReward += currentReward;
+            totalReward += currentReward;
 
             // Update experience replay memory
             agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone);

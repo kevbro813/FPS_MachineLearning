@@ -236,8 +236,9 @@ MonoBehaviour:
   agent:
     bufferIndex: 0
     bufferCount: 0
+    isExploit: 0
   hiddenActivation: sigmoid
-  outputActivation: softmax
+  outputActivation: selected
   layers: 
   episodeMax: 1000
   framesPerState: 4
@@ -258,9 +259,8 @@ MonoBehaviour:
   epochs: 0
   episodeNum: 1
   epiSteps: 0
-  targetSteps: 0
-  mainSteps: 0
   episodeReward: 0
+  totalReward: 0
   isDone: 0
   isTraining: 1
   isConverged: 0
@@ -273,4 +273,4 @@ MonoBehaviour:
   maxViewDistance: 100
   fieldOfView: 45
   collisionDetectRange: 10
-  ui: {fileID: 0}
+  autoSaveEpisode: 10
