@@ -203,8 +203,8 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
-  m_CollisionDetection: 0
+  m_Constraints: 112
+  m_CollisionDetection: 1
 --- !u!114 &1971061415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -218,15 +218,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainNet:
-    neuralLayers: 
-    fitness: 0
+    activationPerLayer: 
     t: 0
+    avgCost: 0
+    totalCost: 0
   targetNet:
-    neuralLayers: 
-    fitness: 0
+    activationPerLayer: 
     t: 0
+    avgCost: 0
+    totalCost: 0
   env:
-    reward: []
     distancesToObstacles: []
     targetDistance: 0
     rotation: 0
@@ -237,28 +238,9 @@ MonoBehaviour:
     bufferIndex: 0
     bufferCount: 0
     isExploit: 0
-  hiddenActivation: sigmoid
-  outputActivation: selected
-  layers: 
-  episodeMax: 1000
-  framesPerState: 4
-  frameBufferSize: 10000
-  epiMaxSteps: 1000
-  epsilon: 1
-  epsilonMin: 0.1
-  epsChangeFactor: 500000
-  expBufferSize: 5000
-  miniBatchSize: 32
-  netCopyRate: 100
-  gamma: 0.95
-  learningRate: 0.00000001
-  beta1: 0.9
-  beta2: 0.999
-  epsilonHat: 0.00001
-  gradientThreshold: 1
   epochs: 0
-  episodeNum: 1
   epiSteps: 0
+  episodeNum: 1
   episodeReward: 0
   totalReward: 0
   isDone: 0
@@ -270,7 +252,8 @@ MonoBehaviour:
   frameSize: 9
   currentLearningRate: 0
   epsilonChange: 0
-  maxViewDistance: 100
-  fieldOfView: 45
-  collisionDetectRange: 10
-  autoSaveEpisode: 10
+  ui: {fileID: 0}
+  tf: {fileID: 0}
+  mat: {fileID: 0}
+  red: {r: 0, g: 0, b: 0, a: 0}
+  white: {r: 0, g: 0, b: 0, a: 0}

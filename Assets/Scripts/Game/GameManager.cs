@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -11,19 +9,22 @@ public class GameManager : MonoBehaviour
     public GameObject adminMenu;
     public GameObject objective; // Add in inspector
     public UIManager ui;
-    public Settings settings;
     public List<GameObject> agentObjectsList;
     public Transform spawnpoint; // Add in inspector
     public DQN dqn;
     public Transform agentShell;
     public string gameState = "pregame";
-    public bool isTraining;
     public bool isAdminMenu;
     public bool isPaused;
     public bool isStartMenu;
     public bool isAgentLoaded;
-    public int agentIDNumber;
-
+    public MathFunctions math;
+    public DefaultSettings defaultSettings;
+    public Settings settings;
+    public float spawnMin_X;
+    public float spawnMax_X;
+    public float spawnMin_Z;
+    public float spawnMax_Z;
     private void Awake()
     {
         // Singleton pattern
@@ -36,13 +37,40 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        settings = new Settings();
+        math = new MathFunctions();
     }
     void Start()
     {
         ui = GameObject.FindWithTag("UIManager").GetComponent<UIManager>();
-        DefaultSettings();
         isAgentLoaded = false;
+        LoadDefaultSettings();
+    }
+
+    public void LoadDefaultSettings()
+    {
+        settings.agentName = defaultSettings.agentName;
+        settings.agentID = defaultSettings.agentID;
+        settings.episodeMax = defaultSettings.episodeMax;
+        settings.framesPerState = defaultSettings.framesPerState;
+        settings.frameBufferSize = defaultSettings.frameBufferSize;
+        settings.epiMaxSteps = defaultSettings.epiMaxSteps;
+        settings.epsilon = defaultSettings.epsilon;
+        settings.epsilonMin = defaultSettings.epsilonMin;
+        settings.epsChangeFactor = defaultSettings.epsChangeFactor;
+        settings.expBufferSize = defaultSettings.expBufferSize;
+        settings.miniBatchSize = defaultSettings.miniBatchSize;
+        settings.netCopyRate = defaultSettings.netCopyRate;
+        settings.gamma = defaultSettings.gamma;
+        settings.learningRate = defaultSettings.learningRate;
+        settings.beta1 = defaultSettings.beta1;
+        settings.beta2 = defaultSettings.beta2;
+        settings.epsilonHat = defaultSettings.epsilonHat;
+        settings.gradientThreshold = defaultSettings.gradientThreshold;
+        settings.maxViewDistance = defaultSettings.maxViewDistance;
+        settings.fieldOfView = defaultSettings.fieldOfView;
+        settings.collisionDetectRange = defaultSettings.collisionDetectRange;
+        settings.autoSaveEpisode = defaultSettings.autoSaveEpisode;
+        settings.activations = defaultSettings.activations;
     }
     // Update is called once per frame
     void Update()
@@ -56,12 +84,10 @@ public class GameManager : MonoBehaviour
             DoActive();
             if (isPaused)
             {
-                Debug.Log("paused");
                 gameState = "pause";
             }
             else if (isAdminMenu)
             {
-                Debug.Log("admin");
                 gameState = "admin";
             }
         }
@@ -99,43 +125,22 @@ public class GameManager : MonoBehaviour
             DoQuit();
         }
     }
-    public void DefaultSettings()
+
+    public void RandomSpawn()
     {
-        settings.episodeMax = 1000;
-        settings.framesPerState = 4;
-        settings.frameBufferSize = 10000;
-        settings.epiMaxSteps = 5000;
-        settings.epsilon = 1.0f;
-        settings.epsilonMin = 0.1f;
-        settings.epsChangeFactor = 500000;
-        settings.expBufferSize = 5000;
-        settings.miniBatchSize = 32;
-        settings.netCopyRate = 1000;
-        settings.gamma = 0.95f;
-        settings.learningRate = 0.00000001d;
-        settings.beta1 = 0.9f;
-        settings.beta2 = 0.999f;
-        settings.epsilonHat = 0.00001d;
-        settings.gradientThreshold = 1.0f;
-        settings.maxViewDistance = 100.0f;
-        settings.fieldOfView = 45.0f;
-        settings.collisionDetectRange = 10.0f;
+        float randomX = Random.Range(spawnMin_X, spawnMax_X);
+        float randomZ = Random.Range(spawnMin_Z, spawnMax_Z);
+        Vector3 randomSpawnVector = new Vector3(randomX, 5.0f, randomZ);
+        spawnpoint.position = randomSpawnVector;
 
-        // TODO: Need to add to display
-        settings.autoSaveEpisode = 10;
-
-        // TODO: Need to add functionality
-        //settings.hiddenActivation = ;
-        //settings.outputActivation = ;
-        //settings.layers = ;
     }
     // Method to spawn AI
     public void SpawnAgent()
     {
+        RandomSpawn();
         GameObject agentClone = Instantiate(agentPrefab, spawnpoint.position, spawnpoint.rotation, agentShell);
         agentObjectsList.Add(agentClone);
         dqn = agentClone.GetComponent<DQN>();
-
     }
     public void DoPregame()
     {

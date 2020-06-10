@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 
@@ -13,12 +12,12 @@ public static class SaveLoad
         }
         else
         {
-            NeuralNetwork nets = dqn.mainNet;
+            NeuralNet nets = dqn.mainNet;
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
             bf.Serialize(file, nets);
             file.Close();
-            Debug.Log("Save Network");
+            Debug.Log("Save Network: " + fileName);
         }
     }
     public static void LoadNet(string fileName, DQN dqn)
@@ -27,9 +26,9 @@ public static class SaveLoad
         {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
-            dqn.mainNet = (NeuralNetwork)bf.Deserialize(file);
+            dqn.mainNet = (NeuralNet)bf.Deserialize(file);
             file.Close();
-            Debug.Log("Load Network");
+            Debug.Log("Load Network: " + fileName);
         }
         else
         {
@@ -43,7 +42,7 @@ public static class SaveLoad
         FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
         bf.Serialize(file, s);
         file.Close();
-        Debug.Log("Save Settings");
+        Debug.Log("Save Settings: " + fileName);
     }
     public static void LoadSettings(string fileName)
     {
@@ -51,7 +50,7 @@ public static class SaveLoad
         FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
         GameManager.instance.settings = (Settings)bf.Deserialize(file);
         file.Close();
-        Debug.Log("Load Settings");
+        Debug.Log("Load Settings: " + fileName);
     }
 
 }

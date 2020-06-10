@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System.IO;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
@@ -28,6 +25,7 @@ public class UIManager : MonoBehaviour
     public InputField maxViewIpt;
     public InputField fovIpt;
     public InputField colDetectIpt;
+    public InputField asIpt;
     public Text episodeNumber;
     public Text maxEpisodes;
     public Text epochs;
@@ -41,15 +39,15 @@ public class UIManager : MonoBehaviour
     public DQN dqn;
     public GameObject resumeButton;
     public GameObject saveButton;
+    public Text EpisodeCost;
+    public Text TotalCost;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         UpdateSettingsDisplay();
     }
-
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (dqn != null && !GameManager.instance.adminMenu.activeSelf)
         {
@@ -58,7 +56,6 @@ public class UIManager : MonoBehaviour
         }
         else if(GameManager.instance.adminMenu.activeSelf && isUpdate)
         {
-            UpdateSettingsDisplay();
             if (GameManager.instance.isAgentLoaded)
             {
                 resumeButton.SetActive(true);
@@ -69,7 +66,6 @@ public class UIManager : MonoBehaviour
                 resumeButton.SetActive(false);
                 saveButton.SetActive(false);
             }
-            isUpdate = false;
         }
     }
     public void UpdateSettingsDisplay()
@@ -93,6 +89,7 @@ public class UIManager : MonoBehaviour
         maxViewIpt.text = GameManager.instance.settings.maxViewDistance.ToString();
         fovIpt.text = GameManager.instance.settings.fieldOfView.ToString();
         colDetectIpt.text = GameManager.instance.settings.collisionDetectRange.ToString();
+        asIpt.text = GameManager.instance.settings.autoSaveEpisode.ToString();
     }
     public void UpdateAgentName()
     {
@@ -177,20 +174,19 @@ public class UIManager : MonoBehaviour
     public void UpdateHUD()
     {
         episodeNumber.text = dqn.episodeNum.ToString();
-        maxEpisodes.text = dqn.episodeMax.ToString();
+        maxEpisodes.text = GameManager.instance.settings.episodeMax.ToString();
         epochs.text = dqn.epochs.ToString();
         totalReward.text = dqn.totalReward.ToString();
         currentReward.text = dqn.episodeReward.ToString();
-        epsilon.text = dqn.epsilon.ToString();
-        epsilonMin.text = dqn.epsilonMin.ToString();
+        epsilon.text = GameManager.instance.settings.epsilon.ToString();
+        epsilonMin.text = GameManager.instance.settings.epsilonMin.ToString();
         episodeSteps.text = dqn.epiSteps.ToString();
-        episodeMaxSteps.text = dqn.epiMaxSteps.ToString();
+        episodeMaxSteps.text = GameManager.instance.settings.epiMaxSteps.ToString();
     }
     public void ResumeGame()
     {
         GameManager.instance.gameState = "continue";
         SaveLoad.SaveSettings(settingsName);
-        GameManager.instance.dqn.LoadSettings();
     }
     public void SaveAgent()
     {
