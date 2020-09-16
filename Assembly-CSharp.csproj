@@ -68,6 +68,7 @@
     <Compile Include="Assets\Scripts\Deep RL\Environment.cs" />
     <Compile Include="Assets\Scripts\Deep RL\MathFunctions.cs" />
     <Compile Include="Assets\Scripts\Deep RL\NeuralNet.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\NeuralNetwork.cs" />
     <Compile Include="Assets\Scripts\Deep RL\Settings.cs" />
     <Compile Include="Assets\Scripts\Features\DefaultSettings.cs" />
     <Compile Include="Assets\Scripts\Features\SaveLoad.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Assets\Scripts\Game\KillBox.cs" />
     <Compile Include="Assets\Scripts\Game\Objective.cs" />
     <Compile Include="Assets\Scripts\Observer\ObserverController.cs" />
+    <Compile Include="Assets\Scripts\Tester.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>E:/Unity Projects/Game AI/FPS_MachineLearning/FPS_MachineLearning/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>

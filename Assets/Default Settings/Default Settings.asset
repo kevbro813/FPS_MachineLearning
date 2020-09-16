@@ -14,24 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agentName: Default
   agentID: 1
-  episodeMax: 1000
+  episodeMax: 25000
   framesPerState: 4
-  frameBufferSize: 10000
-  epiMaxSteps: 5000
+  frameBufferSize: 50000000
+  epiMaxSteps: 2000
   epsilon: 1
   epsilonMin: 0.1
-  epsChangeFactor: 500000
-  expBufferSize: 50000
+  epsChangeFactor: 1000000
+  expBufferSize: 1000000
   miniBatchSize: 32
-  netCopyRate: 1000
-  gamma: 0.95
-  learningRate: 0.0001
+  netCopyRate: 10000
+  gamma: 0.99
+  learningRate: 0.00025
   beta1: 0.9
   beta2: 0.999
-  epsilonHat: 0.001
+  epsilonHat: 0.01
   gradientThreshold: 1
   maxViewDistance: 100
   fieldOfView: 45
-  collisionDetectRange: 12
+  collisionDetectRange: 50
   autoSaveEpisode: 10
-  activations: 02000000020000000200000004000000
+  activations: 01000000010000000100000001000000

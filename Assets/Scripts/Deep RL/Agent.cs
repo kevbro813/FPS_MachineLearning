@@ -35,13 +35,14 @@ public class Agent
         // Input the state and return an action using Epsilon Greedy function (Explore and Exploit)
         double[] action = EpsilonGreedy(state, eps, actQty);
 
-        // TODO: Delete Debug Code when done
-        //Debug.Log("No Movement: " + action[0] + " Forward: " + action[1] + " Back: " + action[2] + " Right: " + action[3] + " Left: " + action[4]);
-        //Debug.Log("State 1: " + state[0] + " State 2: " + state[9] + " State 3: " + state[19] + " State 4: " + state[29] + " State 5: " + state[39]);
-
         // Convert action to binary which is used by the pawn
         bool[] bAction = BinaryAction(action);
 
+        // TODO: Delete Debug Code when done
+        if (isExploit)
+        {
+            TEST_DebugMovement(bAction);
+        }
         // Accept action outputs and apply them to respective pawn functions
         aiPawn.NoMovement(bAction[0]);
         aiPawn.MoveForward(bAction[1]);
@@ -53,6 +54,30 @@ public class Agent
         //aiPawn.RotateLeft(bAction[5]);
         return action;
     }
+
+    private void TEST_DebugMovement(bool[] bAction)
+    {
+        if (bAction[0])
+        {
+            Debug.Log("Idle");
+        }
+        else if (bAction[1])
+        {
+            Debug.Log("Forward");
+        }
+        else if (bAction[2])
+        {
+            Debug.Log("Back");
+        }
+        else if (bAction[3])
+        {
+            Debug.Log("Right");
+        }
+        else if (bAction[4])
+        {
+            Debug.Log("Left");
+        }
+    }
     // Get an action based on state, or small chance (epsilon) for a random action
     public double[] EpsilonGreedy(double[] state, float eps, int actQty) // States are passed to neural network and returns action
     {
@@ -61,13 +86,12 @@ public class Agent
         {
             // Random action
             isExploit = false;
-            return GameManager.instance.math.Softmax(RandomAction(actQty));
+            return RandomAction(actQty);
         }
         else
         {
             // Action via neural net
             isExploit = true;
-
             return dqn.mainNet.FeedForward(state);
         }
     }
@@ -111,7 +135,10 @@ public class Agent
         Tuple<int, double[], double, bool> nTuple = new Tuple<int, double[], double, bool>(idx, action, reward, done); // Create a new tuple with the data passed in
 
         experienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
+    }
 
+    public void UpdateExperienceBufferCounters()
+    {
         // The bufferCount will be set to the max of bufferCount and bufferIndex + 1. This tracks the total size of the buffer and will remain at the max once the buffer is filled
         bufferCount = Mathf.Max(bufferCount, bufferIndex + 1);
 
@@ -119,9 +146,9 @@ public class Agent
         bufferIndex = (bufferIndex + 1) % GameManager.instance.settings.expBufferSize;
     }
     // Get a mini-batch of tuples from the experience buffer to train the agent
-    public Tuple<int, double[], double, bool>[] GetMiniBatch(int mbs)
+    public Tuple<int, double[], double, bool>[] GetMiniBatch(int miniBatchSize, int frameBufferIndex, int framesPerState) // mini batch size, frame buffer index, frames per state
     {
-        Tuple<int, double[], double, bool>[] miniBatch = new Tuple<int, double[], double, bool>[mbs];
+        Tuple<int, double[], double, bool>[] miniBatch = new Tuple<int, double[], double, bool>[miniBatchSize];
 
         for (int i = 0; i < miniBatch.Length; i++) // Loop through the mini-batch tuple
         {
@@ -132,6 +159,13 @@ public class Agent
             {
                 goto start;
             }
+
+            // TODO: CHECK THIS**** Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
+            if (experienceBuffer[rand].Item1 > frameBufferIndex && experienceBuffer[rand].Item1 <= frameBufferIndex + framesPerState)
+            {
+                goto start;
+            }
+
             miniBatch[i] = experienceBuffer[rand]; // Add the random memory to the mini-batch
         }
         return miniBatch; // Return the completed mini-batch

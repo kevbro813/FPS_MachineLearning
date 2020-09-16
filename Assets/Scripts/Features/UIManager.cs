@@ -3,8 +3,9 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    public string fileName;
-    public string settingsName;
+    [HideInInspector] public string fileName;
+    [HideInInspector] public string settingsName;
+    [HideInInspector] public DQN dqn;
     public InputField fileIpt;
     public InputField maxEpsisodeIpt;
     public InputField stepsEpsIpt;
@@ -36,11 +37,9 @@ public class UIManager : MonoBehaviour
     public Text episodeSteps;
     public Text episodeMaxSteps;
     private bool isUpdate = true;
-    public DQN dqn;
     public GameObject resumeButton;
     public GameObject saveButton;
-    public Text EpisodeCost;
-    public Text TotalCost;
+    public Text currentCost;
 
     private void Start()
     {
@@ -182,6 +181,11 @@ public class UIManager : MonoBehaviour
         epsilonMin.text = GameManager.instance.settings.epsilonMin.ToString();
         episodeSteps.text = dqn.epiSteps.ToString();
         episodeMaxSteps.text = GameManager.instance.settings.epiMaxSteps.ToString();
+
+        if (dqn.epochs % GameManager.instance.costUpdateInEpochs == 0 && dqn.cost != null)
+        {
+            currentCost.text = dqn.cost.ToString();
+        }
     }
     public void ResumeGame()
     {
@@ -211,6 +215,7 @@ public class UIManager : MonoBehaviour
         fileName = fileName + ".gd";
         Debug.Log("Loading..." + fileName);
         SaveLoad.LoadNet(fileName, GameManager.instance.dqn);
+        GameManager.instance.gameState = "continue";
         SaveLoad.LoadSettings(settingsName);
         UpdateSettingsDisplay();
         dqn = GameManager.instance.dqn;

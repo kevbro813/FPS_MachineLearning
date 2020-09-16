@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> agentObjectsList;
     public Transform spawnpoint; // Add in inspector
     public DQN dqn;
+    public DQN dqnTester;
     public Transform agentShell;
     public string gameState = "pregame";
     public bool isAdminMenu;
@@ -25,6 +26,7 @@ public class GameManager : MonoBehaviour
     public float spawnMax_X;
     public float spawnMin_Z;
     public float spawnMax_Z;
+    public float costUpdateInEpochs;
     private void Awake()
     {
         // Singleton pattern
@@ -45,7 +47,6 @@ public class GameManager : MonoBehaviour
         isAgentLoaded = false;
         LoadDefaultSettings();
     }
-
     public void LoadDefaultSettings()
     {
         settings.agentName = defaultSettings.agentName;

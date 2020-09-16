@@ -5,8 +5,8 @@ using System;
 public class DQN : MonoBehaviour
 {
     [Header("Neural Networks")]
-    public NeuralNet mainNet;
-    public NeuralNet targetNet;
+    public NeuralNetwork mainNet;
+    public NeuralNetwork targetNet;
     [Space(10)]
 
     [Header("Reinforcement Learning")]
@@ -35,8 +35,8 @@ public class DQN : MonoBehaviour
     [Header("Calculated Variables")]
     public int actionQty; // The number of actions the agent can perform
     public int layerQty; // Number of layers
-    public int stateSize; // Number of frames in a state
-    public int frameSize; // The number of inputs that comprise each frame
+    public int inputsPerFrame; // The number of inputs that comprise each frame
+    public int inputsPerState; // Number of frames in a state
     public double currentLearningRate;
     public float epsilonChange; // This is the rate at which the value of epsilon will reduce each update
     [Space(10)]
@@ -46,6 +46,8 @@ public class DQN : MonoBehaviour
     public Material mat;
     public Color red;
     public Color white;
+
+    public double cost;
 
     private void Start()
     {
@@ -65,8 +67,8 @@ public class DQN : MonoBehaviour
         epiSteps = 0;
         epochs = 0;
         epsilonChange = (GameManager.instance.settings.epsilon - GameManager.instance.settings.epsilonMin) / GameManager.instance.settings.epsChangeFactor;
-        frameSize = GameManager.instance.settings.layers[0] / GameManager.instance.settings.framesPerState;
-        stateSize = frameSize * GameManager.instance.settings.framesPerState;
+        inputsPerFrame = GameManager.instance.settings.layers[0] / GameManager.instance.settings.framesPerState;
+        inputsPerState = inputsPerFrame * GameManager.instance.settings.framesPerState;
         tf = GetComponent<Transform>();
         mat = GetComponent<MeshRenderer>().material;
         red = new Color(255, 0, 0); // Brighten when close to objective
@@ -85,26 +87,19 @@ public class DQN : MonoBehaviour
             mat.color = white;
         }
     }
-
     public void InitQNets()
     {
-        GameManager.instance.settings.layers = new int[] { 40, 20, 10, 5 };
+        GameManager.instance.settings.layers = new int[] { 8, 64, 64, 64, 5 };
         actionQty = GameManager.instance.settings.layers[GameManager.instance.settings.layers.Length - 1];
         layerQty = GameManager.instance.settings.layers.Length;
 
-        mainNet = new NeuralNet(GameManager.instance.settings.layers);
-        // TODO: Check all of the following
-        mainNet.Mutate();
-        targetNet = new NeuralNet(GameManager.instance.settings.layers);
+        mainNet = new NeuralNetwork(GameManager.instance.settings.layers);
         CopyNetwork();
     }
-
     public void RunGame()
     {
         if (episodeNum < GameManager.instance.settings.episodeMax)
-        {
             isDone = false;
-        }
 
         if (episodeNum % GameManager.instance.settings.autoSaveEpisode == 0 && !isSaved) // Autosave feature
         {
@@ -116,14 +111,10 @@ public class DQN : MonoBehaviour
         }
 
         if (episodeNum == GameManager.instance.settings.episodeMax)
-        {
             Debug.Log("Game Over.");
-        }
-
-        RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
-        //episodes.Add(episode); // Add the score to the list of rewards, neural nets and other data. TODO: Sort functionality, Icomparable.
+        else
+            RunEpisode(agent, env); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
     }
-
     // Run one episode
     public void RunEpisode(Agent agent, Environment env)
     {
@@ -131,11 +122,9 @@ public class DQN : MonoBehaviour
         {
             // Copy weights from main to target network periodically
             if (epochs % GameManager.instance.settings.netCopyRate == 0)
-            {
                 CopyNetwork();
-            }
 
-            // Get state from frame buffer
+            // Get state from frame buffer (the current state is actually fbIndex - 1 since fbIndex updates before this runs
             double[] currentState = env.GetState(env.fbIndex - 1);
 
             // Perform the action
@@ -144,22 +133,15 @@ public class DQN : MonoBehaviour
             epochs++; // Increment total steps
             epiSteps++; // Increment steps in episode
 
-            if (epiSteps >= GameManager.instance.settings.epiMaxSteps)
-            {
-                episodeNum++;
-                isDone = true;
-                isSaved = false;
-                epiSteps = 0;
-                episodeReward = 0;
-                GameManager.instance.RandomSpawn();
-                tf.position = GameManager.instance.spawnpoint.position;
-            }
+            NewEpisodeCheck(); // Check if the episode is over and start a new one
 
             // Creates next frame
             double[] nextFrame = env.GetNextFrame();
 
             // Add frame to frame buffer
             int lastFrameIndex = env.UpdateFrameBuffer(nextFrame);
+
+            env.UpdateFrameBufferCounters(); // Updates fbIndex and fbCount variables
 
             // Calculates the reward based on the state
             double currentReward = env.CalculateReward(nextFrame);
@@ -171,20 +153,56 @@ public class DQN : MonoBehaviour
             // Update experience replay memory
             agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone);
 
-            if (isTraining == true && isConverged == false)
-            {
-                // Train the agent
+            CalculateCost();
+
+            agent.UpdateExperienceBufferCounters();
+
+            if (isTraining == true && isConverged == false) // Train the agent
+                //if (epiSteps % 4 == 0) // Run training every 4* steps
                 isConverged = mainNet.Train(this, env, agent);
-            }
 
             // Recalculate epsilon
             GameManager.instance.settings.epsilon = Mathf.Max(GameManager.instance.settings.epsilon - epsilonChange, GameManager.instance.settings.epsilonMin);
         }
     }
+    public void NewEpisodeCheck()
+    {
+        if (epiSteps >= GameManager.instance.settings.epiMaxSteps)
+        {
+            episodeNum++;
+            isDone = true;
+            isSaved = false;
+            epiSteps = 0;
+            episodeReward = 0;
+            GameManager.instance.RandomSpawn();
+            tf.position = GameManager.instance.spawnpoint.position;
+            foreach (Layer lay in mainNet.layers)
+            {
+                //lay.t = 0; // Resetting t to zero will reset the learning rate each episode
+            }
+        }
+    }
+    public void CalculateCost()
+    {
+        Tuple<int, double[], double, bool> miniBatch = agent.experienceBuffer[agent.bufferIndex]; // Get most recent tuple
+        double[] nextState; // Next State (The resulting state after an action)
+        double[] action; // The action performed
+        double reward; // Reward for the action
+        bool done; // Boolean to indicate if the current mini batch is done (This is true on the last frame of an episode to prevent it from being used for training)
 
+        if (miniBatch != null)
+        {
+            nextState = env.GetState(miniBatch.Item1); // Next state ends with the last frame
+            action = miniBatch.Item2;
+            reward = miniBatch.Item3;
+            done = miniBatch.Item4;
+
+            double[] targets = mainNet.CalculateTargets(nextState, reward, done, this);
+            cost = mainNet.Cost(action, targets, actionQty);
+        }
+    }
     public void CopyNetwork()
     {
-        targetNet.SetWeightsMatrix(mainNet.GetWeightsMatrix());
-        targetNet.SetBiases(mainNet.GetBiases());
+        targetNet = mainNet;
     }
 }

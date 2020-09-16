@@ -12,12 +12,12 @@ public static class SaveLoad
         }
         else
         {
-            NeuralNet nets = dqn.mainNet;
+            NeuralNetwork nets = dqn.mainNet;
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
             bf.Serialize(file, nets);
             file.Close();
-            Debug.Log("Save Network: " + fileName);
+            //Debug.Log("Save Network: " + fileName);
         }
     }
     public static void LoadNet(string fileName, DQN dqn)
@@ -26,7 +26,7 @@ public static class SaveLoad
         {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
-            dqn.mainNet = (NeuralNet)bf.Deserialize(file);
+            dqn.mainNet = (NeuralNetwork)bf.Deserialize(file);
             file.Close();
             Debug.Log("Load Network: " + fileName);
         }
@@ -42,7 +42,7 @@ public static class SaveLoad
         FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
         bf.Serialize(file, s);
         file.Close();
-        Debug.Log("Save Settings: " + fileName);
+        //Debug.Log("Save Settings: " + fileName);
     }
     public static void LoadSettings(string fileName)
     {

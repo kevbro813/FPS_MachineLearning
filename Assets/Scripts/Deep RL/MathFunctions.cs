@@ -6,7 +6,7 @@ public class MathFunctions
     // Activation Functions
     public double Relu(double value)
     {
-        return (double)Math.Max(0.0, value);
+        return Math.Max(0.0d, value);
     }
 
     public double LeakyRelu(double value)
@@ -22,7 +22,7 @@ public class MathFunctions
 
     public double Tanh(double value)
     {
-        return (double)Math.Tanh(value);
+        return Math.Tanh(value);
     }
 
     // Activation Function Derivatives
@@ -30,12 +30,10 @@ public class MathFunctions
     {
         return 0 >= value ? 0 : 1;
     }
-
     public double LeakyReluDerivative(double value)
     {
-        return 0 >= value ? 0.01f : 1;
+        return 0 >= value ? 0.01d : 1;
     }
-
     public double SigmoidDerivative(double value)
     {
         return value * (1 - value);
@@ -45,7 +43,6 @@ public class MathFunctions
     {
         return 1 - (value * value);
     }
-
     // Softmax action outputs
     public double[] Softmax(double[] action)
     {
