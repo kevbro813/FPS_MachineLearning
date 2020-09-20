@@ -65,10 +65,11 @@ public class NeuralNetwork
         int miniBatchSize = GameManager.instance.settings.miniBatchSize; // Size of the mini batch used to train the target net
 
         // This Tuple array consists of one mini batch (random sample from experience replay buffer)
-        Tuple<int, double[], double, bool>[] miniBatch = agent.GetMiniBatch(miniBatchSize, env.fbIndex, GameManager.instance.settings.framesPerState);
+        Tuple<int, int, double, bool>[] miniBatch = agent.GetMiniBatch(miniBatchSize, env.fbIndex, GameManager.instance.settings.framesPerState);
 
+        double[][] states = new double[miniBatchSize][];
         double[][] nextStates = new double[miniBatchSize][]; // Next State (The resulting state after an action)
-        double[][] actions = new double[miniBatchSize][]; // The action performed
+        int[] actions = new int[miniBatchSize]; // The action performed
         double[] rewards = new double[miniBatchSize]; // Reward for the action
         bool[] dones = new bool[miniBatchSize]; // Boolean to indicate if the current mini batch is done (This is true on the last frame of an episode to prevent it from being used for training)
 
@@ -77,6 +78,7 @@ public class NeuralNetwork
         {
             if (miniBatch[i] != null)
             {
+                states[i] = env.GetState(miniBatch[i].Item1 - 1);
                 nextStates[i] = env.GetState(miniBatch[i].Item1); // Next state ends with the last frame
                 actions[i] = miniBatch[i].Item2;
                 rewards[i] = miniBatch[i].Item3;
@@ -86,14 +88,48 @@ public class NeuralNetwork
 
         for (int i = 0; i < miniBatchSize; i++) // Iterate through each mini batch
         {
-            double[] targets = CalculateTargets(nextStates[i], rewards[i], dones[i], dqn); // Calculate the targets for the mini batch
+            double[] targets = dqn.targetNet.CalculateTargets(nextStates[i], rewards[i], dones[i], dqn); // Calculate the targets for the mini batch
 
             if (targets != null) // Do not begin training until targets are set
             {
+                double[] acts = FeedForward(states[i]);
                 Backpropagation(targets);
+                dqn.cost = Cost(acts, targets, acts.Length);
             }
         }
         return false;
+    }
+
+    public double[] OneHotProduct(double[] oneHot, double[] actions)
+    {
+        double[] product = new double[actions.Length];
+
+        for (int i = 0; i < actions.Length; i++)
+        {
+            product[i] = oneHot[i] * actions[i];
+        }
+        return product;
+    }
+    public double[] OneHot(double[] actions)
+    {
+        double[] oneHotActions = new double[actions.Length];
+        int maxIndex = 0;
+
+        for (int i = 1; i < actions.Length - 1; i++) // Loop through each action
+        {
+            if (actions[maxIndex] > actions[i]) // If the action 
+            {
+                oneHotActions[maxIndex] = 1;
+                oneHotActions[i] = 0;
+            }
+            else
+            {
+                oneHotActions[maxIndex] = 0;
+                oneHotActions[i] = 1;
+                maxIndex = i;
+            }
+        }
+        return oneHotActions;
     }
     public double Cost(double[] actions, double[] targets, int actionQty)
     {
@@ -101,7 +137,7 @@ public class NeuralNetwork
 
         for (int i = 0; i < actionQty; i++)
         {
-            double error = actions[i] - targets[i];
+            double error = targets[i] - actions[i];
             sum += (error * error);
         }
 
@@ -112,17 +148,24 @@ public class NeuralNetwork
     {
         int aq = dqn.actionQty;
 
-        double[] qValues = dqn.targetNet.FeedForward(nextStates);
+        double qValue = GameManager.instance.math.Max(FeedForward(nextStates));
+        
+        //GameManager.instance.math.Amax(qValues);
 
         double[] targets = new double[aq];
 
         for (int i = 0; i < aq; i++)
         {
-            double d = done == true ? 0d : 1d;
-            targets[i] = reward + (d * GameManager.instance.settings.gamma * qValues[i]);
+            if (done == true)
+            {
+                targets[i] = reward;
+            }
+            else
+            {
+                //double d = done == true ? 0d : 1d;
+                targets[i] = reward + (GameManager.instance.settings.gamma * qValue);
+            }
         }
-
-        //Debug.Log(qValues[1]);
         return targets;
     }
 }
@@ -203,6 +246,12 @@ public class Layer
             }
             outputs[i] = ActivationFunctions(outputs[i] + biases[i], layer);
         }
+        if (activationPerLayer[layer] == Settings.LayerActivations.Softmax) // Apply softmax to output layer if necessary
+        {
+            outputs = GameManager.instance.math.Softmax(outputs);
+        }
+
+        //Debug.Log(outputs[outputs.Length - 1]);
         return outputs;
     }
 
@@ -232,7 +281,7 @@ public class Layer
                 firstMoment[i, j] = (GameManager.instance.settings.beta1 * firstMoment[i, j]) + (1 - GameManager.instance.settings.beta1) * gradient;
                 secondMoment[i, j] = (GameManager.instance.settings.beta2 * secondMoment[i, j]) + (1 - GameManager.instance.settings.beta2) * (gradient * gradient);
 
-                weights[i, j] -= dqn.currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + GameManager.instance.settings.epsilonHat);
+                weights[i, j] += dqn.currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + GameManager.instance.settings.epsilonHat);
             }
         }
     }
@@ -250,13 +299,13 @@ public class Layer
             firstMomentBias[i] = GameManager.instance.settings.beta1 * firstMomentBias[i] + (1 - GameManager.instance.settings.beta1) * biasGradient;
             secondMomentBias[i] = GameManager.instance.settings.beta2 * secondMomentBias[i] + (1 - GameManager.instance.settings.beta2) * (biasGradient * biasGradient);
 
-            biases[i] -= dqn.currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + GameManager.instance.settings.epsilonHat);
+            biases[i] += dqn.currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + GameManager.instance.settings.epsilonHat);
         }
     }
     public void BackpropOutput(double[] targets, int lay)
     {
         for (int i = 0; i < outputQty; i++)
-            error[i] = outputs[i] - targets[i];
+            error[i] = targets[i] - outputs[i];
 
         for (int i = 0; i < outputQty; i++)
             gamma[i] = error[i] * ActivationDerivatives(outputs[i], lay);
@@ -267,7 +316,6 @@ public class Layer
                 weightsDelta[i, j] = gamma[i] * inputs[j];
         }
     }
-
     public void BackpropHidden(double[] gammaForward, double[,] weightsForward, int lay)
     {
         for (int i = 0; i < outputQty; i++)
