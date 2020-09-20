@@ -6,7 +6,7 @@ public class Agent
 {
     private AIPawn aiPawn;
     private DQN dqn;
-    public Tuple<int, double[], double, bool>[] experienceBuffer; // Tuple that holds the Index of the last frame(used to calculate states), action, reward and done flag 
+    public Tuple<int, int, double, bool>[] experienceBuffer; // Tuple that holds the Index of the last frame(used to calculate states), action, reward and done flag 
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
     public bool isExploit = false;
@@ -24,77 +24,86 @@ public class Agent
         dqn = d;
         int seed = DateToInt(DateTime.Now);
         UnityEngine.Random.InitState(seed);
-        experienceBuffer = new Tuple<int, double[], double, bool>[GameManager.instance.settings.expBufferSize];
+        experienceBuffer = new Tuple<int, int, double, bool>[GameManager.instance.settings.expBufferSize];
         bufferIndex = 0;
         bufferCount = 0;
     }
 
     // Performs an action based on inputs from a boolean array
-    public double[] PerformAction(double[] state, float eps, int actQty)
+    public int PerformAction(double[] state, float eps, int actQty)
     {
         // Input the state and return an action using Epsilon Greedy function (Explore and Exploit)
-        double[] action = EpsilonGreedy(state, eps, actQty);
+        int action = EpsilonGreedy(state, eps, actQty);
 
-        // Convert action to binary which is used by the pawn
-        bool[] bAction = BinaryAction(action);
-
-        // TODO: Delete Debug Code when done
-        if (isExploit)
-        {
-            TEST_DebugMovement(bAction);
-        }
+        MoveAgent(action);
         // Accept action outputs and apply them to respective pawn functions
-        aiPawn.NoMovement(bAction[0]);
-        aiPawn.MoveForward(bAction[1]);
-        aiPawn.MoveBack(bAction[2]);
-        aiPawn.MoveRight(bAction[3]);
-        aiPawn.MoveLeft(bAction[4]);
         
-        //aiPawn.RotateRight(bAction[4]);
-        //aiPawn.RotateLeft(bAction[5]);
         return action;
     }
 
-    private void TEST_DebugMovement(bool[] bAction)
+    private void MoveAgent(int action)
     {
-        if (bAction[0])
+        if (action == 0)
         {
-            Debug.Log("Idle");
+            if (isExploit)
+            {
+                Debug.Log("Idle");
+            }
+            aiPawn.NoMovement(true);
         }
-        else if (bAction[1])
+        else if (action == 1)
         {
-            Debug.Log("Forward");
+            if (isExploit)
+            {
+                Debug.Log("Forward");
+            }
+            aiPawn.MoveForward(true);
         }
-        else if (bAction[2])
+        else if (action == 2)
         {
-            Debug.Log("Back");
+            if (isExploit)
+            {
+                Debug.Log("Back");
+            }
+            aiPawn.MoveBack(true);
         }
-        else if (bAction[3])
+        else if (action == 3)
         {
-            Debug.Log("Right");
+            if (isExploit)
+            {
+                Debug.Log("Right");
+            }
+            aiPawn.MoveRight(true);
         }
-        else if (bAction[4])
+        else if (action == 4)
         {
-            Debug.Log("Left");
+            if (isExploit)
+            {
+                Debug.Log("Left");
+            }
+            aiPawn.MoveLeft(true);
         }
+        //aiPawn.RotateRight(bAction[4]);
+        //aiPawn.RotateLeft(bAction[5]);
     }
     // Get an action based on state, or small chance (epsilon) for a random action
-    public double[] EpsilonGreedy(double[] state, float eps, int actQty) // States are passed to neural network and returns action
+    public int EpsilonGreedy(double[] state, float eps, int actQty) // States are passed to neural network and returns action
     {
         // The probability for a random action is based on epsilon. Epsilon will gradually reduce which means the agent's behavior will become less random over time. *Exploration vs. Exploitation
         if (UnityEngine.Random.value < eps)
         {
             // Random action
             isExploit = false;
-            return RandomAction(actQty);
+            return UnityEngine.Random.Range(0, actQty);
         }
         else
         {
             // Action via neural net
             isExploit = true;
-            return dqn.mainNet.FeedForward(state);
+            return GameManager.instance.math.ArgMax(dqn.mainNet.FeedForward(state));
         }
     }
+
     // The strongest action will be true, the rest will be false. Used to move the agent
     public bool[] BinaryAction(double[] action)
     {
@@ -130,9 +139,9 @@ public class Agent
         return randAction; // Return random actions array
     }
     // Buffer that stores (s, a, r, s') tuples 
-    public void ExperienceReplay(int idx, double[] action, double reward, bool done) // The state and next state are stored as one float array called frameBuffer.
+    public void ExperienceReplay(int idx, int action, double reward, bool done) // The state and next state are stored as one float array called frameBuffer.
     {
-        Tuple<int, double[], double, bool> nTuple = new Tuple<int, double[], double, bool>(idx, action, reward, done); // Create a new tuple with the data passed in
+        Tuple<int, int, double, bool> nTuple = new Tuple<int, int, double, bool>(idx, action, reward, done); // Create a new tuple with the data passed in
 
         experienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
     }
@@ -146,26 +155,25 @@ public class Agent
         bufferIndex = (bufferIndex + 1) % GameManager.instance.settings.expBufferSize;
     }
     // Get a mini-batch of tuples from the experience buffer to train the agent
-    public Tuple<int, double[], double, bool>[] GetMiniBatch(int miniBatchSize, int frameBufferIndex, int framesPerState) // mini batch size, frame buffer index, frames per state
+    public Tuple<int, int, double, bool>[] GetMiniBatch(int miniBatchSize, int frameBufferIndex, int framesPerState) // mini batch size, frame buffer index, frames per state
     {
-        Tuple<int, double[], double, bool>[] miniBatch = new Tuple<int, double[], double, bool>[miniBatchSize];
+        Tuple<int, int, double, bool>[] miniBatch = new Tuple<int, int, double, bool>[miniBatchSize];
 
         for (int i = 0; i < miniBatch.Length; i++) // Loop through the mini-batch tuple
         {
             start:
             int rand = UnityEngine.Random.Range(0, bufferCount); // Get a random buffer index to add to the mini-batch
 
-            if (experienceBuffer[rand].Item4 == true) // Skip any memories marked with a done flag
-            {
-                goto start;
-            }
+            //if (experienceBuffer[rand].Item4 == true) // Skip any memories marked with a done flag
+            //{
+            //    goto start;
+            //}
 
             // TODO: CHECK THIS**** Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
             if (experienceBuffer[rand].Item1 > frameBufferIndex && experienceBuffer[rand].Item1 <= frameBufferIndex + framesPerState)
             {
                 goto start;
             }
-
             miniBatch[i] = experienceBuffer[rand]; // Add the random memory to the mini-batch
         }
         return miniBatch; // Return the completed mini-batch

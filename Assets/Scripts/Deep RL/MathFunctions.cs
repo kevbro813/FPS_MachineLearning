@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 [Serializable]
 public class MathFunctions
@@ -44,29 +45,56 @@ public class MathFunctions
         return 1 - (value * value);
     }
     // Softmax action outputs
-    public double[] Softmax(double[] action)
+    public double[] Softmax(double[] actions)
     {
-        double[] softAction = new double[action.Length];
-        double[] expAction = new double[action.Length];
+        double[] softAction = new double[actions.Length];
+        double[] expAction = new double[actions.Length];
         double sum = 0.0d;
-        for (int i = 0; i < action.Length; i++)
+        double max = Max(actions);
+
+        for (int i = 0; i < actions.Length; i++)
         {
-            expAction[i] = Math.Exp(action[i]);
+            expAction[i] = Math.Exp(actions[i] - max);
             sum += expAction[i];
         }
 
-        for (int i = 0; i < action.Length; i++)
+        for (int i = 0; i < actions.Length; i++)
         {
             softAction[i] = expAction[i] / sum;
         }
 
         return softAction;
     }
+    // Returns index of max action value
+    public int ArgMax(double[] action)
+    {
+        int argMax = 0;
 
+        for (int i = 1; i < action.Length; i++) // Loop through each action
+        {
+            if (action[argMax] < action[i])
+            {
+                argMax = i;
+            }
+        }
+        return argMax;
+    }
+    public double Max(double[] actions)
+    {
+        double maxAct = 0;
+        foreach (double act in actions)
+        {
+            if (act > maxAct)
+            {
+                maxAct = act;
+            }
+        }
+        return maxAct;
+    }
     // Softmax Derivative
     public double SoftmaxDerivative(double value)
     {
-        return (1 - value) * value;
+        return value * (1 - value);
     }
     public double AverageCost(DQN dqn, double[] costs)
     {
@@ -82,12 +110,12 @@ public class MathFunctions
         return avgCost;
     }
     // Returns the strongest action, the rest will be set to 0. Used for selected_Actions and QValues
-    public double[] SelectedActions(double[] action)
+    public double[] Amax(double[] action)
     {
         double[] sAction = new double[action.Length];
         int indexMax = 0;
 
-        for (int i = 1; i < action.Length - 1; i++) // Loop through each action
+        for (int i = 1; i < action.Length; i++) // Loop through each action
         {
             if (action[indexMax] > action[i]) // If the 
             {

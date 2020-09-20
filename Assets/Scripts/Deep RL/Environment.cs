@@ -75,15 +75,15 @@ public class Environment
     // Get the state from frame buffer by taking the oldest frames
     public double[] GetState(int frameIndex)
     {
-        int framesPerState = GameManager.instance.settings.framesPerState;
+        int fps = GameManager.instance.settings.framesPerState;
         double[] flatState = new double[dqn.inputsPerState]; // Flatten state into a 1-D array to input into neural net
 
-        if (fbCount - framesPerState >= 0) // Check that there are enough frames to create a state.
+        if (fbCount - fps >= 0) // Check that there are enough frames to create a state.
         {
-            double[][] state = new double[framesPerState][]; // Create a new array to hold the state
+            double[][] state = new double[fps][]; // Create a new array to hold the state
             int fi;
 
-            for (int i = 0; i < framesPerState; i++) // Loop through the frames
+            for (int i = 0; i < fps; i++) // Loop through the frames
             {
                 if ((frameIndex - i) < 0) // If the frameIndex is a negative
                 {
@@ -93,16 +93,16 @@ public class Environment
                 {
                     fi = frameIndex - i; // Use the frameIndex if not negative
                 }
-                state[framesPerState - 1 - i] = frameBuffer[fi];
+                state[fps - 1 - i] = frameBuffer[fi];
             }
 
             int indx = 0;
 
-            for (int j = 0; j < framesPerState; j++)
+            for (int j = 0; j < fps; j++)
             {
-                for (int k = 0; k < dqn.inputsPerFrame; k++)
-                {
-                    if (state[j] != null)
+                if (state[j] != null)
+                { 
+                    for (int k = 0; k < dqn.inputsPerFrame; k++)
                     {
                         flatState[indx] = state[j][k];
                         indx++;

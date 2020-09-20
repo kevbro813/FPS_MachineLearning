@@ -89,7 +89,7 @@ public class DQN : MonoBehaviour
     }
     public void InitQNets()
     {
-        GameManager.instance.settings.layers = new int[] { 8, 64, 64, 64, 5 };
+        GameManager.instance.settings.layers = new int[] { 8, 64, 64, 5 };
         actionQty = GameManager.instance.settings.layers[GameManager.instance.settings.layers.Length - 1];
         layerQty = GameManager.instance.settings.layers.Length;
 
@@ -128,7 +128,7 @@ public class DQN : MonoBehaviour
             double[] currentState = env.GetState(env.fbIndex - 1);
 
             // Perform the action
-            double[] currentAction = agent.PerformAction(currentState, GameManager.instance.settings.epsilon, actionQty);
+            int currentAction = agent.PerformAction(currentState, GameManager.instance.settings.epsilon, actionQty);
 
             epochs++; // Increment total steps
             epiSteps++; // Increment steps in episode
@@ -149,17 +149,19 @@ public class DQN : MonoBehaviour
             // Add current reward to the episode and total reward
             episodeReward += currentReward;
             totalReward += currentReward;
-
+            //Debug.Log(isDone);
             // Update experience replay memory
             agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone);
 
-            CalculateCost();
+            //CalculateCost();
 
             agent.UpdateExperienceBufferCounters();
 
             if (isTraining == true && isConverged == false) // Train the agent
-                //if (epiSteps % 4 == 0) // Run training every 4* steps
-                isConverged = mainNet.Train(this, env, agent);
+            {
+                if (epiSteps % 4 == 0) // Run training every 4* steps
+                    isConverged = mainNet.Train(this, env, agent);
+            }
 
             // Recalculate epsilon
             GameManager.instance.settings.epsilon = Mathf.Max(GameManager.instance.settings.epsilon - epsilonChange, GameManager.instance.settings.epsilonMin);
@@ -184,9 +186,9 @@ public class DQN : MonoBehaviour
     }
     public void CalculateCost()
     {
-        Tuple<int, double[], double, bool> miniBatch = agent.experienceBuffer[agent.bufferIndex]; // Get most recent tuple
+        Tuple<int, int, double, bool> miniBatch = agent.experienceBuffer[agent.bufferIndex]; // Get most recent tuple
         double[] nextState; // Next State (The resulting state after an action)
-        double[] action; // The action performed
+        int action; // The action performed
         double reward; // Reward for the action
         bool done; // Boolean to indicate if the current mini batch is done (This is true on the last frame of an episode to prevent it from being used for training)
 
@@ -197,8 +199,9 @@ public class DQN : MonoBehaviour
             reward = miniBatch.Item3;
             done = miniBatch.Item4;
 
-            double[] targets = mainNet.CalculateTargets(nextState, reward, done, this);
-            cost = mainNet.Cost(action, targets, actionQty);
+            //double[] targets = mainNet.CalculateTargets(nextState, reward, done, this);
+
+            //cost = mainNet.Cost(action, targets, actionQty);
         }
     }
     public void CopyNetwork()
