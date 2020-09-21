@@ -88,13 +88,16 @@ public class NeuralNetwork
 
         for (int i = 0; i < miniBatchSize; i++) // Iterate through each mini batch
         {
-            double[] targets = dqn.targetNet.CalculateTargets(nextStates[i], rewards[i], dones[i], dqn); // Calculate the targets for the mini batch
+            double[] qState = FeedForward(states[i]); // Not sure if this is needed
+            double[] qNextState = FeedForward(nextStates[i]); // Needed for argmax calculation
+            int argMax = GameManager.instance.math.ArgMax(qNextState);
+            double[] target = dqn.targetNet.CalculateTargets(nextStates[i], rewards[i], dones[i], dqn, argMax); // Calculate the targets for the mini batch
 
-            if (targets != null) // Do not begin training until targets are set
+            if (target != null) // Do not begin training until targets are set
             {
                 double[] acts = FeedForward(states[i]);
-                Backpropagation(targets);
-                dqn.cost = Cost(acts, targets, acts.Length);
+                Backpropagation(target);
+                dqn.cost = Cost(acts, target, acts.Length);
             }
         }
         return false;
@@ -144,12 +147,12 @@ public class NeuralNetwork
         return sum / actionQty;
     }
     // Calculate the Targets for each mini batch
-    public double[] CalculateTargets(double[] nextStates, double reward, bool done, DQN dqn)
+    public double[] CalculateTargets(double[] nextStates, double reward, bool done, DQN dqn, int argMax)
     {
         int aq = dqn.actionQty;
 
-        double qValue = GameManager.instance.math.Max(FeedForward(nextStates));
-        
+        double[] qNextStateTarget = FeedForward(nextStates);
+
         //GameManager.instance.math.Amax(qValues);
 
         double[] targets = new double[aq];
@@ -163,7 +166,7 @@ public class NeuralNetwork
             else
             {
                 //double d = done == true ? 0d : 1d;
-                targets[i] = reward + (GameManager.instance.settings.gamma * qValue);
+                targets[i] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
             }
         }
         return targets;
