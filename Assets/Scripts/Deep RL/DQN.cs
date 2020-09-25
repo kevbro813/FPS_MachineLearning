@@ -89,11 +89,12 @@ public class DQN : MonoBehaviour
     }
     public void InitQNets()
     {
-        GameManager.instance.settings.layers = new int[] { 8, 64, 64, 5 };
+        GameManager.instance.settings.layers = new int[] { 6, 45, 10, 5 };
         actionQty = GameManager.instance.settings.layers[GameManager.instance.settings.layers.Length - 1];
         layerQty = GameManager.instance.settings.layers.Length;
 
         mainNet = new NeuralNetwork(GameManager.instance.settings.layers);
+        targetNet = new NeuralNetwork(GameManager.instance.settings.layers);
         CopyNetwork();
     }
     public void RunGame()
@@ -120,6 +121,11 @@ public class DQN : MonoBehaviour
     {
         if (!isDone)
         {
+            epochs++; // Increment total steps
+            epiSteps++; // Increment steps in episode
+
+            NewEpisodeCheck(); // Check if the episode is over and start a new one
+
             // Copy weights from main to target network periodically
             if (epochs % GameManager.instance.settings.netCopyRate == 0)
                 CopyNetwork();
@@ -130,11 +136,6 @@ public class DQN : MonoBehaviour
             // Perform the action
             int currentAction = agent.PerformAction(currentState, GameManager.instance.settings.epsilon, actionQty);
 
-            epochs++; // Increment total steps
-            epiSteps++; // Increment steps in episode
-
-            NewEpisodeCheck(); // Check if the episode is over and start a new one
-
             // Creates next frame
             double[] nextFrame = env.GetNextFrame();
 
@@ -144,23 +145,21 @@ public class DQN : MonoBehaviour
             env.UpdateFrameBufferCounters(); // Updates fbIndex and fbCount variables
 
             // Calculates the reward based on the state
-            double currentReward = env.CalculateReward(nextFrame);
+            double currentReward = env.CalculateReward();
 
             // Add current reward to the episode and total reward
             episodeReward += currentReward;
             totalReward += currentReward;
-            //Debug.Log(isDone);
+
             // Update experience replay memory
             agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone);
-
-            //CalculateCost();
 
             agent.UpdateExperienceBufferCounters();
 
             if (isTraining == true && isConverged == false) // Train the agent
             {
-                if (epiSteps % 4 == 0) // Run training every 4* steps
-                    isConverged = mainNet.Train(this, env, agent);
+                if (epochs % 4 == 0) // Run training every 4* steps
+                    isConverged = Train(this, env, agent);
             }
 
             // Recalculate epsilon
@@ -184,28 +183,109 @@ public class DQN : MonoBehaviour
             }
         }
     }
-    public void CalculateCost()
-    {
-        Tuple<int, int, double, bool> miniBatch = agent.experienceBuffer[agent.bufferIndex]; // Get most recent tuple
-        double[] nextState; // Next State (The resulting state after an action)
-        int action; // The action performed
-        double reward; // Reward for the action
-        bool done; // Boolean to indicate if the current mini batch is done (This is true on the last frame of an episode to prevent it from being used for training)
-
-        if (miniBatch != null)
-        {
-            nextState = env.GetState(miniBatch.Item1); // Next state ends with the last frame
-            action = miniBatch.Item2;
-            reward = miniBatch.Item3;
-            done = miniBatch.Item4;
-
-            //double[] targets = mainNet.CalculateTargets(nextState, reward, done, this);
-
-            //cost = mainNet.Cost(action, targets, actionQty);
-        }
-    }
     public void CopyNetwork()
     {
-        targetNet = mainNet;
+        for (int i = 0; i < mainNet.layers.Length; i++)
+        {
+            for (int j = 0; j < targetNet.layers[i].weights.Length; j++)
+            {
+                for (int k = 0; k < targetNet.layers[i].weights[j].Length; k++)
+                {
+                    targetNet.layers[i].weights[j][k] = mainNet.layers[i].weights[j][k];
+                    targetNet.layers[i].biases[j] = mainNet.layers[i].biases[j];
+                }
+            }
+        }
+        
+    }
+    public bool Train(DQN dqn, Environment env, Agent agent)
+    {
+        int miniBatchSize = GameManager.instance.settings.miniBatchSize; // Size of the mini batch used to train the target net
+
+        // This Tuple array consists of one mini batch (random sample from experience replay buffer)
+        Tuple<int, int, double, bool>[] miniBatch = agent.GetMiniBatch(miniBatchSize, env.fbIndex, GameManager.instance.settings.framesPerState);
+
+        // Initialize arrays to hold batch data
+        double[][] states = new double[miniBatchSize][];
+        double[][] nextStates = new double[miniBatchSize][]; // Next State (The resulting state after an action)
+        int[] actions = new int[miniBatchSize]; // The action performed
+        double[] rewards = new double[miniBatchSize]; // Reward for the action
+        bool[] dones = new bool[miniBatchSize]; // Boolean to indicate if the current mini batch is done (This is true on the last frame of an episode to prevent it from being used for training)
+
+        // Unpack mini batches
+        for (int i = 0; i < miniBatchSize; i++)
+        {
+            if (miniBatch[i] != null)
+            {
+                states[i] = env.GetState(miniBatch[i].Item1 - 1);
+                nextStates[i] = env.GetState(miniBatch[i].Item1); // Next state ends with the last frame
+                actions[i] = miniBatch[i].Item2;
+                rewards[i] = miniBatch[i].Item3;
+                dones[i] = miniBatch[i].Item4;
+            }
+        }
+
+        double[][] batchOutputs = new double[miniBatchSize][];
+        double[][] batchTargets = new double[miniBatchSize][];
+
+        double[] outputTotal = new double[actionQty];
+        double[] targetTotal = new double[actionQty];
+
+        for (int i = 0; i < miniBatchSize; i++) // Iterate through each mini batch
+        {
+            //double[] qState = mainNet.FeedForward(states[i]); // Used for all targets that are not the highest q value
+            batchOutputs[i] = mainNet.FeedForward(states[i]);
+            double[] qNextState = mainNet.FeedForward(nextStates[i]); 
+            int argMaxAction = GameManager.instance.math.ArgMax(qNextState); // Calculate argmax (returns highest q-value index)
+
+            //double[] target = CalculateTargets(nextStates[i], qState, rewards[i], dones[i], argMaxAction, actions[i]); // Calculate the targets for the mini batch
+            batchTargets[i] = CalculateTargets(nextStates[i], batchOutputs[i], rewards[i], dones[i], argMaxAction, actions[i]);
+
+            mainNet.FeedForward(states[i]);
+            mainNet.Backpropagation(batchTargets[i]);
+
+            for (int j = 0; j < actionQty; j++)
+            {
+                outputTotal[j] += batchOutputs[i][j];
+                targetTotal[j] += batchTargets[i][j];
+            }
+        }
+
+        cost = Cost(outputTotal, targetTotal);
+
+        return false;
+    }
+    // Calculate the Targets for each mini batch
+    public double[] CalculateTargets(double[] nextStates, double[] qStates, double reward, bool done, int argMax, int action)
+    {
+        double[] qNextStateTarget = targetNet.FeedForward(nextStates);
+
+        double[] targets = new double[actionQty];
+
+        for (int i = 0; i < targets.Length; i++)
+        {
+            targets[i] = qStates[i];
+        }
+
+        //Debug.Log("qStates: " + targets[3] + " qNextStates: " + qNextStateTarget[3]);
+        if (done == true)
+            targets[action] = reward;
+        else
+            targets[action] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
+
+        return targets;
+    }
+
+    public double Cost(double[] actions, double[] targets)
+    {
+        double sum = 0;
+
+        for (int i = 0; i < actionQty; i++)
+        {
+            double error = targets[i] - actions[i];
+            sum += (error * error);
+        }
+
+        return sum / actionQty;
     }
 }

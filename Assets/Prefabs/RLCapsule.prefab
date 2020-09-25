@@ -218,15 +218,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainNet:
-    activationPerLayer: 
-    t: 0
-    avgCost: 0
-    totalCost: 0
+    layers: []
   targetNet:
-    activationPerLayer: 
-    t: 0
-    avgCost: 0
-    totalCost: 0
+    layers: []
   env:
     distancesToObstacles: []
     targetDistance: 0
@@ -248,8 +242,8 @@ MonoBehaviour:
   isConverged: 0
   actionQty: 0
   layerQty: 0
-  stateSize: 0
-  frameSize: 9
+  inputsPerFrame: 0
+  inputsPerState: 0
   currentLearningRate: 0
   epsilonChange: 0
   ui: {fileID: 0}
@@ -257,3 +251,4 @@ MonoBehaviour:
   mat: {fileID: 0}
   red: {r: 0, g: 0, b: 0, a: 0}
   white: {r: 0, g: 0, b: 0, a: 0}
+  cost: 0

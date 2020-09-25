@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
     public MathFunctions math;
     public DefaultSettings defaultSettings;
     public Settings settings;
+    public Settings loadSettings;
     public float spawnMin_X;
     public float spawnMax_X;
     public float spawnMin_Z;
@@ -72,6 +73,33 @@ public class GameManager : MonoBehaviour
         settings.collisionDetectRange = defaultSettings.collisionDetectRange;
         settings.autoSaveEpisode = defaultSettings.autoSaveEpisode;
         settings.activations = defaultSettings.activations;
+    }
+
+    public void LoadSettings()
+    {
+        settings.agentName = loadSettings.agentName;
+        settings.agentID = loadSettings.agentID;
+        settings.episodeMax = loadSettings.episodeMax;
+        settings.framesPerState = loadSettings.framesPerState;
+        settings.frameBufferSize = loadSettings.frameBufferSize;
+        settings.epiMaxSteps = loadSettings.epiMaxSteps;
+        settings.epsilon = loadSettings.epsilon;
+        settings.epsilonMin = loadSettings.epsilonMin;
+        settings.epsChangeFactor = loadSettings.epsChangeFactor;
+        settings.expBufferSize = loadSettings.expBufferSize;
+        settings.miniBatchSize = loadSettings.miniBatchSize;
+        settings.netCopyRate = loadSettings.netCopyRate;
+        settings.gamma = loadSettings.gamma;
+        settings.learningRate = loadSettings.learningRate;
+        settings.beta1 = loadSettings.beta1;
+        settings.beta2 = loadSettings.beta2;
+        settings.epsilonHat = loadSettings.epsilonHat;
+        settings.gradientThreshold = loadSettings.gradientThreshold;
+        settings.maxViewDistance = loadSettings.maxViewDistance;
+        settings.fieldOfView = loadSettings.fieldOfView;
+        settings.collisionDetectRange = loadSettings.collisionDetectRange;
+        settings.autoSaveEpisode = loadSettings.autoSaveEpisode;
+        settings.activations = loadSettings.activations;
     }
     // Update is called once per frame
     void Update()
