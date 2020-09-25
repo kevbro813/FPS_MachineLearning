@@ -113,25 +113,25 @@ public class Environment
         return flatState; // Return the current state
     }
     // TODO: Calculate the reward
-    public double CalculateReward(double[] nf)
+    public double CalculateReward()
     {
         double reward = 0;
-        reward--;
+ 
         if (isOnObjective)
         {
             //Debug.Log("Reward!");
-            reward += 11;
+            reward += 10;
         }
-        //else
-        //{
-        //    reward--;
-        //}
+        else
+        {
+            reward--;
+        }
         //for (int i = 0; i < distancesToObstacles.Length; i++)
         //{
-        //    if (distancesToObstacles[i] < 5)
+        //    if (distancesToObstacles[i] < 2)
         //    {
         //        //reward -= (2 - distancesToObstacles[i]); // TODO: FIX THIS... Bool to indicate if a raycast hits a wall. If it is false and distanceToObstacles is 0, then it should set distanceToObstacles to max number to avoid confusion with points.
-        //        reward--;
+        //        reward -= 5;
         //    }
         //}
         return reward;

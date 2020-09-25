@@ -17,8 +17,9 @@ public class MathFunctions
 
     public double Sigmoid(double value)
     {
-        double n = Math.Exp(value);
-        return n / (1.0d + n);
+        //double n = Math.Exp(value);
+        //return n / (1.0d + n);
+        return 1.0d / (1.0d + Math.Exp(-value));
     }
 
     public double Tanh(double value)
@@ -130,6 +131,37 @@ public class MathFunctions
             }
         }
         return sAction;
+    }
+    public double[] OneHotProduct(double[] oneHot, double[] actions)
+    {
+        double[] product = new double[actions.Length];
+
+        for (int i = 0; i < actions.Length; i++)
+        {
+            product[i] = oneHot[i] * actions[i];
+        }
+        return product;
+    }
+    public double[] OneHot(double[] actions)
+    {
+        double[] oneHotActions = new double[actions.Length];
+        int maxIndex = 0;
+
+        for (int i = 1; i < actions.Length - 1; i++) // Loop through each action
+        {
+            if (actions[maxIndex] > actions[i]) // If the action 
+            {
+                oneHotActions[maxIndex] = 1;
+                oneHotActions[i] = 0;
+            }
+            else
+            {
+                oneHotActions[maxIndex] = 0;
+                oneHotActions[i] = 1;
+                maxIndex = i;
+            }
+        }
+        return oneHotActions;
     }
     // Normalize values
     public double Normalize(double data, int count, bool isMainNet, int lay, int node, double[][] mainMeans, double[][] mainVariances, double[][] targetMeans, double[][] targetVariances)

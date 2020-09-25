@@ -15,17 +15,17 @@ MonoBehaviour:
   agentName: Default
   agentID: 1
   episodeMax: 2500
-  framesPerState: 4
-  frameBufferSize: 5000000
+  framesPerState: 3
+  frameBufferSize: 50000000
   epiMaxSteps: 2000
   epsilon: 1
   epsilonMin: 0.1
   epsChangeFactor: 1000000
-  expBufferSize: 1000000
-  miniBatchSize: 16
+  expBufferSize: 10000000
+  miniBatchSize: 32
   netCopyRate: 10000
-  gamma: 0.99
-  learningRate: 0.00025
+  gamma: 0.95
+  learningRate: 0.0001
   beta1: 0.9
   beta2: 0.999
   epsilonHat: 0.01

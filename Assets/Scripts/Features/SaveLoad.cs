@@ -48,8 +48,9 @@ public static class SaveLoad
     {
         BinaryFormatter bf = new BinaryFormatter();
         FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
-        GameManager.instance.settings = (Settings)bf.Deserialize(file);
+        GameManager.instance.loadSettings = (Settings)bf.Deserialize(file);
         file.Close();
+        GameManager.instance.LoadSettings();
         Debug.Log("Load Settings: " + fileName);
     }
 
