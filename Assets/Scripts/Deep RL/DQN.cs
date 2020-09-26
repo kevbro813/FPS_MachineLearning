@@ -269,9 +269,9 @@ public class DQN : MonoBehaviour
 
         //Debug.Log("qStates: " + targets[3] + " qNextStates: " + qNextStateTarget[3]);
         if (done == true)
-            targets[action] = reward;
+            targets[argMax] = reward;
         else
-            targets[action] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
+            targets[argMax] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
 
         return targets;
     }

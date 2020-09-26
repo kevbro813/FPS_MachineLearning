@@ -25,7 +25,7 @@ MonoBehaviour:
   miniBatchSize: 32
   netCopyRate: 10000
   gamma: 0.95
-  learningRate: 0.0001
+  learningRate: 0.0003
   beta1: 0.9
   beta2: 0.999
   epsilonHat: 0.01
