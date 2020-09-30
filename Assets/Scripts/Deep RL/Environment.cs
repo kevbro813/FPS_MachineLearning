@@ -83,7 +83,7 @@ public class Environment
             double[][] state = new double[fps][]; // Create a new array to hold the state
             int fi;
 
-            for (int i = 0; i < fps; i++) // Loop through the frames
+            for (int i = 0; i < fps; i++) // Loop through the frames  
             {
                 if ((frameIndex - i) < 0) // If the frameIndex is a negative
                 {

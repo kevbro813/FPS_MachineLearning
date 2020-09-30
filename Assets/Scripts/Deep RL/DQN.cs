@@ -48,11 +48,15 @@ public class DQN : MonoBehaviour
     public Color white;
 
     public double cost;
+    public bool isQNetNew;
+    public bool isStateReady;
+    public int framesFirstState;
 
     private void Start()
     {
         agent = new Agent();
         env = new Environment();
+        isQNetNew = true;
         InitQNets();
         agent.Init_Agent(GetComponent<AIPawn>(), this);
         env.Init_Env(GetComponent<Transform>(), this);
@@ -61,6 +65,8 @@ public class DQN : MonoBehaviour
         isDone = false;
         isConverged = false;
         isTraining = true;
+        isStateReady = false;
+        framesFirstState = 0;
         episodeNum = 1;
         episodeReward = 0;
         totalReward = 0;
@@ -89,12 +95,17 @@ public class DQN : MonoBehaviour
     }
     public void InitQNets()
     {
-        GameManager.instance.settings.layers = new int[] { 6, 45, 10, 5 };
+        GameManager.instance.settings.layers = new int[] { 6, 50, 25, 5 };
         actionQty = GameManager.instance.settings.layers[GameManager.instance.settings.layers.Length - 1];
         layerQty = GameManager.instance.settings.layers.Length;
 
-        mainNet = new NeuralNetwork(GameManager.instance.settings.layers);
+        // TODO: Check if loading or new network
+        if (isQNetNew)
+        {
+            mainNet = new NeuralNetwork(GameManager.instance.settings.layers);
+        }
         targetNet = new NeuralNetwork(GameManager.instance.settings.layers);
+
         CopyNetwork();
     }
     public void RunGame()
@@ -130,6 +141,14 @@ public class DQN : MonoBehaviour
             if (epochs % GameManager.instance.settings.netCopyRate == 0)
                 CopyNetwork();
 
+            if (!isStateReady)
+            {
+                framesFirstState++;
+                if (framesFirstState == GameManager.instance.settings.framesPerState)
+                {
+                    isStateReady = true;
+                }
+            }
             // Get state from frame buffer (the current state is actually fbIndex - 1 since fbIndex updates before this runs
             double[] currentState = env.GetState(env.fbIndex - 1);
 
@@ -151,10 +170,13 @@ public class DQN : MonoBehaviour
             episodeReward += currentReward;
             totalReward += currentReward;
 
-            // Update experience replay memory
-            agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone);
+            if (isStateReady)
+            {
+                // Update experience replay memory
+                agent.ExperienceReplay(lastFrameIndex, currentAction, currentReward, isDone);
 
-            agent.UpdateExperienceBufferCounters();
+                agent.UpdateExperienceBufferCounters();
+            }
 
             if (isTraining == true && isConverged == false) // Train the agent
             {
@@ -173,7 +195,9 @@ public class DQN : MonoBehaviour
             episodeNum++;
             isDone = true;
             isSaved = false;
-            epiSteps = 0;
+            epiSteps = 1;
+            isStateReady = false;
+            framesFirstState = 0;
             episodeReward = 0;
             GameManager.instance.RandomSpawn();
             tf.position = GameManager.instance.spawnpoint.position;
@@ -234,7 +258,7 @@ public class DQN : MonoBehaviour
         for (int i = 0; i < miniBatchSize; i++) // Iterate through each mini batch
         {
             //double[] qState = mainNet.FeedForward(states[i]); // Used for all targets that are not the highest q value
-            batchOutputs[i] = mainNet.FeedForward(states[i]);
+            batchOutputs[i] = targetNet.FeedForward(states[i]);
             double[] qNextState = mainNet.FeedForward(nextStates[i]); 
             int argMaxAction = GameManager.instance.math.ArgMax(qNextState); // Calculate argmax (returns highest q-value index)
 
@@ -268,10 +292,11 @@ public class DQN : MonoBehaviour
         }
 
         //Debug.Log("qStates: " + targets[3] + " qNextStates: " + qNextStateTarget[3]);
-        if (done == true)
-            targets[argMax] = reward;
-        else
-            targets[argMax] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
+        //if (done == true)
+        //    targets[action] = reward;
+        //else
+
+        targets[action] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
 
         return targets;
     }

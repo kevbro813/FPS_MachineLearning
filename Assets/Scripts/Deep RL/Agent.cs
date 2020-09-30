@@ -164,10 +164,10 @@ public class Agent
             start:
             int rand = UnityEngine.Random.Range(0, bufferCount); // Get a random buffer index to add to the mini-batch
 
-            //if (experienceBuffer[rand].Item4 == true) // Skip any memories marked with a done flag
-            //{
-            //    goto start;
-            //}
+            if (experienceBuffer[rand].Item4 == true) // Skip any memories marked with a done flag
+            {
+                goto start;
+            }
 
             // TODO: CHECK THIS**** Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
             if (experienceBuffer[rand].Item1 > frameBufferIndex && experienceBuffer[rand].Item1 <= frameBufferIndex + framesPerState)

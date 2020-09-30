@@ -147,7 +147,6 @@ public class Layer
         {
             outputs = GameManager.instance.math.Softmax(outputs);
         }
-
         //Debug.Log(outputs[outputs.Length - 1]);
         return outputs;
     }

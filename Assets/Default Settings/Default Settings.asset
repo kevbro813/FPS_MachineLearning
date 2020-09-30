@@ -25,10 +25,10 @@ MonoBehaviour:
   miniBatchSize: 32
   netCopyRate: 10000
   gamma: 0.95
-  learningRate: 0.0003
+  learningRate: 0.001
   beta1: 0.9
   beta2: 0.999
-  epsilonHat: 0.01
+  epsilonHat: 0.000000001
   gradientThreshold: 1
   maxViewDistance: 100
   fieldOfView: 45

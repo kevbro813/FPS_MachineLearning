@@ -238,7 +238,7 @@ MonoBehaviour:
   episodeReward: 0
   totalReward: 0
   isDone: 0
-  isTraining: 1
+  isTraining: 0
   isConverged: 0
   actionQty: 0
   layerQty: 0
