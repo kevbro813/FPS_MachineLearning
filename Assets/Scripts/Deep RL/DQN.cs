@@ -95,7 +95,7 @@ public class DQN : MonoBehaviour
     }
     public void InitQNets()
     {
-        GameManager.instance.settings.layers = new int[] { 6, 50, 25, 5 };
+        GameManager.instance.settings.layers = new int[] { 6, 50, 50, 5 };
         actionQty = GameManager.instance.settings.layers[GameManager.instance.settings.layers.Length - 1];
         layerQty = GameManager.instance.settings.layers.Length;
 
@@ -257,12 +257,9 @@ public class DQN : MonoBehaviour
 
         for (int i = 0; i < miniBatchSize; i++) // Iterate through each mini batch
         {
-            //double[] qState = mainNet.FeedForward(states[i]); // Used for all targets that are not the highest q value
-            batchOutputs[i] = targetNet.FeedForward(states[i]);
-            double[] qNextState = mainNet.FeedForward(nextStates[i]); 
-            int argMaxAction = GameManager.instance.math.ArgMax(qNextState); // Calculate argmax (returns highest q-value index)
-
-            //double[] target = CalculateTargets(nextStates[i], qState, rewards[i], dones[i], argMaxAction, actions[i]); // Calculate the targets for the mini batch
+            batchOutputs[i] = mainNet.FeedForward(states[i]); // Calculate current state Q values using main network // TODO: Is this required?
+            double[] qNextState = mainNet.FeedForward(nextStates[i]); // Caluculate qNextState values using main network // TODO: Checked
+            int argMaxAction = GameManager.instance.math.ArgMax(qNextState); // Calculate argmax (returns highest q-value index) of qNextState // TODO: Checked
             batchTargets[i] = CalculateTargets(nextStates[i], batchOutputs[i], rewards[i], dones[i], argMaxAction, actions[i]);
 
             mainNet.FeedForward(states[i]);
@@ -282,21 +279,20 @@ public class DQN : MonoBehaviour
     // Calculate the Targets for each mini batch
     public double[] CalculateTargets(double[] nextStates, double[] qStates, double reward, bool done, int argMax, int action)
     {
-        double[] qNextStateTarget = targetNet.FeedForward(nextStates);
+        double[] qNextStateTarget = targetNet.FeedForward(nextStates); // Calculate next Q values using target network // TODO: Checked
 
         double[] targets = new double[actionQty];
 
         for (int i = 0; i < targets.Length; i++)
         {
-            targets[i] = qStates[i];
+            targets[i] = qStates[i]; // TODO: Are all non-max actions set to zero or to the output of mainNet.FeedForward(states)?
         }
 
         //Debug.Log("qStates: " + targets[3] + " qNextStates: " + qNextStateTarget[3]);
-        //if (done == true)
-        //    targets[action] = reward;
-        //else
-
-        targets[action] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
+        if (done == true)
+            targets[action] = reward;
+        else
+            targets[action] = reward + (GameManager.instance.settings.gamma * qNextStateTarget[argMax]);
 
         return targets;
     }
