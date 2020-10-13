@@ -64,18 +64,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Deep RL\Agent.cs" />
-    <Compile Include="Assets\Scripts\Deep RL\DQN.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\DoubleDQN.cs" />
     <Compile Include="Assets\Scripts\Deep RL\Environment.cs" />
     <Compile Include="Assets\Scripts\Deep RL\MathFunctions.cs" />
-    <Compile Include="Assets\Scripts\Deep RL\NeuralNet.cs" />
     <Compile Include="Assets\Scripts\Deep RL\NeuralNetwork.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\RLComponent.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\RLManager.cs" />
     <Compile Include="Assets\Scripts\Deep RL\Settings.cs" />
     <Compile Include="Assets\Scripts\Features\DefaultSettings.cs" />
     <Compile Include="Assets\Scripts\Features\SaveLoad.cs" />
     <Compile Include="Assets\Scripts\Features\UIManager.cs" />
     <Compile Include="Assets\Scripts\Game\AIPawn.cs" />
     <Compile Include="Assets\Scripts\Game\GameManager.cs" />
-    <Compile Include="Assets\Scripts\Game\KillBox.cs" />
     <Compile Include="Assets\Scripts\Game\Objective.cs" />
     <Compile Include="Assets\Scripts\Observer\ObserverController.cs" />
     <Compile Include="Assets\Scripts\Tester.cs" />

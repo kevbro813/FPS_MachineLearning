@@ -11,7 +11,7 @@ public class DefaultSettings : ScriptableObject
     public int epiMaxSteps = 5000;
     public float epsilon = 1.0f;
     public float epsilonMin = 0.1f;
-    public float epsChangeFactor = 500000;
+    public float epsDecayRate = 500000;
     public int expBufferSize = 50000;
     public int miniBatchSize = 32;
     public int netCopyRate = 1000;

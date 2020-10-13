@@ -92,7 +92,7 @@ GameObject:
   - component: {fileID: 5874489041997724356}
   - component: {fileID: 9059662200578306949}
   - component: {fileID: 7572914116102913964}
-  - component: {fileID: 1971061415}
+  - component: {fileID: 1260667856558689984}
   m_Layer: 8
   m_Name: RLCapsule
   m_TagString: Agent
@@ -205,7 +205,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 1
---- !u!114 &1971061415
+--- !u!114 &1260667856558689984
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -214,41 +214,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 5874489041997724355}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e2882b74f2d90c546b828961f62583c7, type: 3}
+  m_Script: {fileID: 11500000, guid: e8e7db0334b1ebf4ca81018f99129225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainNet:
-    layers: []
-  targetNet:
-    layers: []
-  env:
-    distancesToObstacles: []
-    targetDistance: 0
-    rotation: 0
-    fbIndex: 0
-    fbCount: 0
-    isOnObjective: 0
-  agent:
-    bufferIndex: 0
-    bufferCount: 0
-    isExploit: 0
-  epochs: 0
-  epiSteps: 0
-  episodeNum: 1
-  episodeReward: 0
-  totalReward: 0
-  isDone: 0
-  isTraining: 0
-  isConverged: 0
-  actionQty: 0
-  layerQty: 0
-  inputsPerFrame: 0
-  inputsPerState: 0
-  currentLearningRate: 0
-  epsilonChange: 0
-  ui: {fileID: 0}
-  tf: {fileID: 0}
-  mat: {fileID: 0}
-  red: {r: 0, g: 0, b: 0, a: 0}
-  white: {r: 0, g: 0, b: 0, a: 0}
-  cost: 0

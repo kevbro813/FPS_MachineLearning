@@ -5,26 +5,26 @@ using System;
 public class Agent
 {
     private AIPawn aiPawn;
-    private DQN dqn;
+    private RLComponent rlComponent;
     public Tuple<int, int, double, bool>[] experienceBuffer; // Tuple that holds the Index of the last frame(used to calculate states), action, reward and done flag 
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
     public bool isExploit = false;
-
+    private int expBufferSize;
     // Converts date to an int that can be used as the seed for RNG
-    public int DateToInt(DateTime dateTime)
+    private int DateToInt(DateTime dateTime)
     {
         return dateTime.Year + dateTime.Month + dateTime.Day + dateTime.Hour + dateTime.Minute + dateTime.Second + dateTime.Millisecond;
     }
     // Initialize a new agent with an empty experienceBuffer
-    public void Init_Agent(AIPawn p, DQN d)
+    public void Init_Agent(AIPawn p, RLComponent rl)
     {
-        // TODO: Load the model the agent will use  
         aiPawn = p;
-        dqn = d;
+        rlComponent = rl;
         int seed = DateToInt(DateTime.Now);
         UnityEngine.Random.InitState(seed);
-        experienceBuffer = new Tuple<int, int, double, bool>[GameManager.instance.settings.expBufferSize];
+        expBufferSize = RLManager.instance.settings.expBufferSize;
+        experienceBuffer = new Tuple<int, int, double, bool>[expBufferSize];
         bufferIndex = 0;
         bufferCount = 0;
     }
@@ -51,23 +51,23 @@ public class Agent
             }
             aiPawn.NoMovement(true);
         }
-        else if (action == 1)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Forward");
-            }
-            aiPawn.MoveForward(true);
-        }
-        else if (action == 2)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Back");
-            }
-            aiPawn.MoveBack(true);
-        }
-        else if (action == 3)
+        //else if (action == 1)
+        //{
+        //    if (isExploit)
+        //    {
+        //        Debug.Log("Forward");
+        //    }
+        //    aiPawn.MoveForward(true);
+        //}
+        //else if (action == 2)
+        //{
+        //    if (isExploit)
+        //    {
+        //        Debug.Log("Back");
+        //    }
+        //    aiPawn.MoveBack(true);
+        //}
+        if (action == 1)
         {
             if (isExploit)
             {
@@ -75,7 +75,7 @@ public class Agent
             }
             aiPawn.MoveRight(true);
         }
-        else if (action == 4)
+        else if (action == 2)
         {
             if (isExploit)
             {
@@ -100,44 +100,10 @@ public class Agent
         {
             // Action via neural net
             isExploit = true;
-            return GameManager.instance.math.ArgMax(dqn.mainNet.FeedForward(state));
+            return RLManager.math.ArgMax(rlComponent.mainNet.FeedForward(state));
         }
     }
 
-    // The strongest action will be true, the rest will be false. Used to move the agent
-    public bool[] BinaryAction(double[] action)
-    {
-        bool[] bAction = new bool[action.Length];
-        int maxIndex = 0;
-        for (int i = 1; i < bAction.Length; i++) // Loop through each action
-        {
-            if (action[maxIndex] > action[i]) // If the action 
-            {
-                bAction[maxIndex] = true;
-                bAction[i] = false;
-            }
-            else
-            {
-                bAction[maxIndex] = false;
-                bAction[i] = true;
-                maxIndex = i;
-            }  
-        }
-        return bAction;
-    }
-
-    // Create a random action
-    public double[] RandomAction(int actQty)
-    {
-        double[] randAction = new double[actQty]; // Create a new float array to hold the action values
-
-        // Loop through the array and add a random number to each index
-        for (int i = 0; i < randAction.Length; i++)
-        {
-            randAction[i] = (double)UnityEngine.Random.value; // Just picked an arbitrary range which should not matter much for a random action. *Remember inclusive/exclusive with float variables
-        }
-        return randAction; // Return random actions array
-    }
     // Buffer that stores (s, a, r, s') tuples 
     public void ExperienceReplay(int idx, int action, double reward, bool done) // The state and next state are stored as one float array called frameBuffer.
     {
@@ -152,7 +118,7 @@ public class Agent
         bufferCount = Mathf.Max(bufferCount, bufferIndex + 1);
 
         // bufferIndex is set to the modulus of bufferIndex + 1. This will reset current to 0 when the buffer is full. (This represents the current index to fill with new tuples)
-        bufferIndex = (bufferIndex + 1) % GameManager.instance.settings.expBufferSize;
+        bufferIndex = (bufferIndex + 1) % expBufferSize;
     }
     // Get a mini-batch of tuples from the experience buffer to train the agent
     public Tuple<int, int, double, bool>[] GetMiniBatch(int miniBatchSize, int frameBufferIndex, int framesPerState) // mini batch size, frame buffer index, frames per state
@@ -164,12 +130,7 @@ public class Agent
             start:
             int rand = UnityEngine.Random.Range(0, bufferCount); // Get a random buffer index to add to the mini-batch
 
-            //if (experienceBuffer[rand].Item4 == true) // Skip any memories marked with a done flag
-            //{
-            //    goto start;
-            //}
-
-            // TODO: CHECK THIS**** Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
+            // Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
             if (experienceBuffer[rand].Item1 > frameBufferIndex && experienceBuffer[rand].Item1 <= frameBufferIndex + framesPerState)
             {
                 goto start;

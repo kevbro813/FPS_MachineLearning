@@ -20,7 +20,7 @@ public class Tester : MonoBehaviour
 
         NeuralNetwork net = new NeuralNetwork(new int[] { 3, 25, 25, 1 });
 
-        for (int i = 0; i < 5000; i++)
+        for (int i = 0; i < 20000; i++)
         {
             net.FeedForward(new double[] { 0, 0, 0 });
             net.Backpropagation(new double[] { 0 });

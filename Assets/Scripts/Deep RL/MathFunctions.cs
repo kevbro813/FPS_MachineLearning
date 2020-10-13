@@ -17,8 +17,6 @@ public class MathFunctions
 
     public double Sigmoid(double value)
     {
-        //double n = Math.Exp(value);
-        //return n / (1.0d + n);
         return 1.0d / (1.0d + Math.Exp(-value));
     }
 
@@ -97,17 +95,17 @@ public class MathFunctions
     {
         return value * (1 - value);
     }
-    public double AverageCost(DQN dqn, double[] costs)
+    public double AverageCost(RLComponent rl, double[] costs)
     {
         double avgCost; // Average loss for each action
         double totLoss = 0; // Variable to hold total loss, used to average
 
         // Calculate average the losses for each action
-        for (int i = 0; i < dqn.actionQty; i++)
+        for (int i = 0; i < rl.actionQty; i++)
         {
             totLoss += costs[i]; // Sum costs of 
         }
-        avgCost = totLoss / dqn.actionQty; // Calculate average loss
+        avgCost = totLoss / rl.actionQty; // Calculate average loss
         return avgCost;
     }
     // Returns the strongest action, the rest will be set to 0. Used for selected_Actions and QValues

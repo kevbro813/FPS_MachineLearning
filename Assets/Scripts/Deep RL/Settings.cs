@@ -22,12 +22,12 @@ public class Settings
     public int epiMaxSteps; // Steps per episode
     public float epsilon; // Used in GetAction function, Epsilon is basically the chance for a random action, Epsilon gradually reduces until it reaches epsilon_min
     public float epsilonMin; // epsilon_min is the lowest value for epsilon, i.e. 0.1 means there is a 10% chance for a random action   
-    public float epsChangeFactor; // Used to decay epsilon
+    public float epsDecayRate; // Used to decay epsilon
     public int expBufferSize; // The maximum size of the buffer (Can be viewed as the agent's memory)
     public int miniBatchSize; // Size of the mini-batch used to train the agent
     public int netCopyRate;
     // Research the following settings
-    public float gamma; // TODO: What should gamma be set to?   
+    public float gamma; // Discount factor
     public double learningRate;
     public float beta1;
     public float beta2;
@@ -35,7 +35,6 @@ public class Settings
     public double gradientThreshold;
     [Space(10)] 
     
-
     [Header("Environment Settings")]
     public float maxViewDistance;
     public float fieldOfView;

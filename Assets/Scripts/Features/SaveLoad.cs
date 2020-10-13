@@ -4,29 +4,29 @@ using System.IO;
 
 public static class SaveLoad
 {
-    public static void SaveNet(string fileName, DQN dqn)
+    public static void SaveNet(string fileName, RLComponent rl)
     {
-        if (File.Exists(Path.Combine(Application.persistentDataPath, fileName)))
+        if (File.Exists(Path.Combine("E://ML_Specimen", fileName)))
         {
             Debug.Log("A file with that name already exists. Please choose a different name.");
         }
         else
         {
-            NeuralNetwork nets = dqn.mainNet;
+            NeuralNetwork nets = rl.mainNet;
             BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
+            FileStream file = File.Create(Path.Combine("E://ML_Specimen", fileName));
             bf.Serialize(file, nets);
             file.Close();
             //Debug.Log("Save Network: " + fileName);
         }
     }
-    public static void LoadNet(string fileName, DQN dqn)
+    public static void LoadNet(string fileName, RLComponent rl)
     {
-        if (File.Exists(Path.Combine(Application.persistentDataPath, fileName)))
+        if (File.Exists(Path.Combine("E://ML_Specimen", fileName)))
         {
             BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
-            dqn.mainNet = (NeuralNetwork)bf.Deserialize(file);
+            FileStream file = File.Open(Path.Combine("E://ML_Specimen", fileName), FileMode.Open);
+            rl.mainNet = (NeuralNetwork)bf.Deserialize(file);
             file.Close();
             Debug.Log("Load Network: " + fileName);
         }
@@ -37,9 +37,9 @@ public static class SaveLoad
     }
     public static void SaveSettings(string fileName)
     {
-        Settings s = GameManager.instance.settings;
+        Settings s = RLManager.instance.settings;
         BinaryFormatter bf = new BinaryFormatter();
-        FileStream file = File.Create(Path.Combine(Application.persistentDataPath, fileName));
+        FileStream file = File.Create(Path.Combine("E://ML_Specimen", fileName));
         bf.Serialize(file, s);
         file.Close();
         //Debug.Log("Save Settings: " + fileName);
@@ -47,11 +47,11 @@ public static class SaveLoad
     public static void LoadSettings(string fileName)
     {
         BinaryFormatter bf = new BinaryFormatter();
-        FileStream file = File.Open(Path.Combine(Application.persistentDataPath, fileName), FileMode.Open);
-        GameManager.instance.loadSettings = (Settings)bf.Deserialize(file);
+        FileStream file = File.Open(Path.Combine("E://ML_Specimen", fileName), FileMode.Open);
+        RLManager.instance.loadSettings = (Settings)bf.Deserialize(file);
         file.Close();
-        GameManager.instance.LoadSettings();
-        Debug.Log("Load Settings: " + fileName);
+        RLManager.instance.LoadSettings();
+        //Debug.Log("Load Settings: " + fileName);
     }
 
 }

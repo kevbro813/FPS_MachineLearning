@@ -16,24 +16,22 @@ public class NeuralNetwork
     public NeuralNetwork(int[] layerTemplate)
     {
         this.neuralNetStructure = new int[layerTemplate.Length]; //  Create a new array of neural layers using the size of the layers parameter
+        
         for (int i = 0; i < layerTemplate.Length; i++) // Iterate through each layer
             this.neuralNetStructure[i] = layerTemplate[i]; // Set the number of neurons in each layer
 
         layers = new Layer[layerTemplate.Length - 1];
 
         for (int i = 0; i < layers.Length; i++)
-        {
             layers[i] = new Layer(layerTemplate[i], layerTemplate[i + 1]);
-        }
     }
 
     public double[] FeedForward(double[] inputs)
     {
         layers[0].FeedForward(inputs, 0);
         for (int i = 1; i < layers.Length; i++)
-        {
             layers[i].FeedForward(layers[i - 1].outputs, i);
-        }
+
         return layers[layers.Length - 1].outputs;
     }
 
@@ -42,13 +40,9 @@ public class NeuralNetwork
         for (int i = layers.Length - 1; i >= 0; i--)
         {
             if (i == layers.Length - 1)
-            {
                 layers[i].BackpropOutput(targets, i);
-            }
             else
-            {
                 layers[i].BackpropHidden(layers[i + 1].gamma, layers[i + 1].weights, i);
-            }
         }
         UpdateWeightsAndBiases();
     }
@@ -56,9 +50,7 @@ public class NeuralNetwork
     public void UpdateWeightsAndBiases()
     {
         for (int i = 0; i < layers.Length; i++)
-        {
-            layers[i].Optimize(GameManager.instance.dqn ? GameManager.instance.dqn : GameManager.instance.dqnTester);
-        }
+            layers[i].Optimize(RLManager.instance.rlComponent ? RLManager.instance.rlComponent : RLManager.instance.rlComponentTester);
     }
 }
 
@@ -80,6 +72,10 @@ public class Layer
     private double[,] secondMoment;
     private double[] firstMomentBias;
     private double[] secondMomentBias;
+    private double learningRate;
+    private double beta1;
+    private double beta2;
+    private double epsilonHat;
 
     public Settings.LayerActivations[] activationPerLayer;
 
@@ -95,7 +91,11 @@ public class Layer
         gamma = new double[numberOfOutputs];
         error = new double[numberOfOutputs];
         biases = new double[numberOfOutputs];
-        activationPerLayer = GameManager.instance.settings.activations;
+        activationPerLayer = RLManager.instance.settings.activations;
+        learningRate = RLManager.instance.settings.learningRate;
+        beta1 = RLManager.instance.settings.beta1;
+        beta2 = RLManager.instance.settings.beta2;
+        epsilonHat = RLManager.instance.settings.epsilonHat;
 
         for (int i = 0; i < weights.Length; i++)
         {
@@ -116,18 +116,14 @@ public class Layer
     public void Init_Biases()
     {
         for (int i = 0; i < biases.Length; i++)
-        {
             biases[i] = (double)UnityEngine.Random.Range(-0.5f, 0.5f); // Set random weight for biases
-        }
     }
     public void Init_Weights()
     {
         for (int i = 0; i < outputQty; i++)
         {
             for (int j = 0; j < inputQty; j++)
-            {
                 weights[i][j] = (double)UnityEngine.Random.Range(-0.5f, 0.5f); // Set a random weight
-            }
         }
     }
     public double[] FeedForward(double[] inputs, int layer)
@@ -141,61 +137,50 @@ public class Layer
             {
                 outputs[i] += inputs[j] * weights[i][j];
             }
+            
             outputs[i] = ActivationFunctions(outputs[i] + biases[i], layer);
         }
+
         if (activationPerLayer[layer] == Settings.LayerActivations.Softmax) // Apply softmax to output layer if necessary
-        {
-            outputs = GameManager.instance.math.Softmax(outputs);
-        }
+            outputs = RLManager.math.Softmax(outputs);
+
         //Debug.Log(outputs[outputs.Length - 1]);
         return outputs;
     }
 
-    public void Optimize(DQN dqn)
+    public void Optimize(RLComponent rl)
     {
-        if (!dqn.isConverged)
-        {
-            t++; // This is reset to 0 each episode which will therefore reset the learning rate
-            dqn.currentLearningRate = GameManager.instance.settings.learningRate * Math.Sqrt(1 - Math.Pow(GameManager.instance.settings.beta2, t)) / (1 - Math.Pow(GameManager.instance.settings.beta1, t));
+        t++; // This is reset to 0 each episode which will therefore reset the learning rate
+        rl.currentLearningRate = learningRate * Math.Sqrt(1 - Math.Pow(beta2, t)) / (1 - Math.Pow(beta1, t));
 
-            UpdateWeights(dqn);
-            UpdateBiases(dqn);
-        }
+        UpdateWeights(rl);
+        UpdateBiases(rl);
     }
-    private void UpdateWeights(DQN dqn)
+    private void UpdateWeights(RLComponent rl)
     {
         for (int i = 0; i < outputQty; i++)
         {
             for (int j = 0; j < inputQty; j++)
             {
                 double gradient = weightsDelta[i][j];
-                //if (Math.Abs(gradient) > GameManager.instance.settings.gradientThreshold)
-                //{
-                //    gradient *= GameManager.instance.settings.gradientThreshold / Math.Abs(gradient); // Clip gradient to prevent exploding and vanishing gradients
-                //}
 
-                firstMoment[i, j] = (GameManager.instance.settings.beta1 * firstMoment[i, j]) + (1 - GameManager.instance.settings.beta1) * gradient;
-                secondMoment[i, j] = (GameManager.instance.settings.beta2 * secondMoment[i, j]) + (1 - GameManager.instance.settings.beta2) * (gradient * gradient);
+                firstMoment[i, j] = (beta1 * firstMoment[i, j]) + (1 - beta1) * gradient;
+                secondMoment[i, j] = (beta2 * secondMoment[i, j]) + (1 - beta2) * (gradient * gradient);
 
-                weights[i][j] += dqn.currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + GameManager.instance.settings.epsilonHat);
+                weights[i][j] += rl.currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + epsilonHat);
             }
         }
     }
-    private void UpdateBiases(DQN dqn)
+    private void UpdateBiases(RLComponent rl)
     {
         for (int i = 0; i < outputQty; i++)
         {
             double biasGradient = gamma[i];
 
-            //if (Math.Abs(biasGradient) > GameManager.instance.settings.gradientThreshold)
-            //{
-            //    biasGradient *= GameManager.instance.settings.gradientThreshold / Math.Abs(biasGradient); // Clip gradient to prevent exploding and vanishing gradients
-            //}
+            firstMomentBias[i] = beta1 * firstMomentBias[i] + (1 - beta1) * biasGradient;
+            secondMomentBias[i] = beta2 * secondMomentBias[i] + (1 - beta2) * (biasGradient * biasGradient);
 
-            firstMomentBias[i] = GameManager.instance.settings.beta1 * firstMomentBias[i] + (1 - GameManager.instance.settings.beta1) * biasGradient;
-            secondMomentBias[i] = GameManager.instance.settings.beta2 * secondMomentBias[i] + (1 - GameManager.instance.settings.beta2) * (biasGradient * biasGradient);
-
-            biases[i] += dqn.currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + GameManager.instance.settings.epsilonHat);
+            biases[i] += rl.currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + epsilonHat);
         }
     }
     public void BackpropOutput(double[] targets, int lay)
@@ -217,8 +202,11 @@ public class Layer
         for (int i = 0; i < outputQty; i++)
         {
             gamma[i] = 0;
+
             for (int j = 0; j < gammaForward.Length; j++)
+            {
                 gamma[i] += gammaForward[j] * weightsForward[j][i];
+            }
 
             gamma[i] *= ActivationDerivatives(outputs[i], lay);
         }
@@ -226,9 +214,7 @@ public class Layer
         for (int i = 0; i < outputQty; i++)
         {
             for (int j = 0; j < inputQty; j++)
-            {
                 weightsDelta[i][j] = gamma[i] * inputs[j];
-            }
         }
     }
     public double ActivationFunctions(double value, int layer)
@@ -236,17 +222,17 @@ public class Layer
         switch (activationPerLayer[layer])
         {
             case Settings.LayerActivations.Relu:
-                return GameManager.instance.math.Relu(value);
+                return RLManager.math.Relu(value);
             case Settings.LayerActivations.LeakyRelu:
-                return GameManager.instance.math.LeakyRelu(value);
+                return RLManager.math.LeakyRelu(value);
             case Settings.LayerActivations.Sigmoid:
-                return GameManager.instance.math.Sigmoid(value);
+                return RLManager.math.Sigmoid(value);
             case Settings.LayerActivations.Tanh:
-                return GameManager.instance.math.Tanh(value);
+                return RLManager.math.Tanh(value);
             case Settings.LayerActivations.Softmax: // Softmax relies on all of the output values to be calculated. Therefore, just return the value and softmax will be applied after all outputs are calculated
                 return value;
             default:
-                return GameManager.instance.math.Relu(value);
+                return RLManager.math.Relu(value);
         }
     }
     public double ActivationDerivatives(double value, int layer)
@@ -254,17 +240,17 @@ public class Layer
         switch (activationPerLayer[layer])
         {
             case Settings.LayerActivations.Relu:
-                return GameManager.instance.math.ReluDerivative(value);
+                return RLManager.math.ReluDerivative(value);
             case Settings.LayerActivations.LeakyRelu:
-                return GameManager.instance.math.LeakyReluDerivative(value);
+                return RLManager.math.LeakyReluDerivative(value);
             case Settings.LayerActivations.Sigmoid:
-                return GameManager.instance.math.SigmoidDerivative(value);
+                return RLManager.math.SigmoidDerivative(value);
             case Settings.LayerActivations.Tanh:
-                return GameManager.instance.math.TanhDerivative(value);
+                return RLManager.math.TanhDerivative(value);
             case Settings.LayerActivations.Softmax:
-                return GameManager.instance.math.SoftmaxDerivative(value);
+                return RLManager.math.SoftmaxDerivative(value);
             default:
-                return GameManager.instance.math.ReluDerivative(value);
+                return RLManager.math.ReluDerivative(value);
         }
     }
 }

@@ -5,7 +5,7 @@ public class UIManager : MonoBehaviour
 {
     [HideInInspector] public string fileName;
     [HideInInspector] public string settingsName;
-    [HideInInspector] public DQN dqn;
+    public RLComponent rlComponent;
     public InputField fileIpt;
     public InputField maxEpsisodeIpt;
     public InputField stepsEpsIpt;
@@ -13,7 +13,7 @@ public class UIManager : MonoBehaviour
     public InputField frameBufferIpt;
     public InputField epsilonIpt;
     public InputField epsMinIpt;
-    public InputField epsChangeIpt;
+    public InputField epsDecayIpt;
     public InputField expBufferSizeIpt;
     public InputField miniBatchInpt;
     public InputField netCopyRateIpt;
@@ -36,11 +36,12 @@ public class UIManager : MonoBehaviour
     public Text epsilonMin;
     public Text episodeSteps;
     public Text episodeMaxSteps;
-    private bool isUpdate = true;
+    private bool isUpdate;
     public GameObject resumeButton;
     public GameObject saveButton;
     public Text currentCost;
-
+    public Toggle trainingToggle;
+    private bool isTrainingTemp;
     private void Start()
     {
         UpdateSettingsDisplay();
@@ -48,14 +49,9 @@ public class UIManager : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        if (dqn != null && !GameManager.instance.adminMenu.activeSelf)
+        if(GameManager.instance.adminMenu.activeSelf)
         {
-            UpdateHUD();
-            isUpdate = true;
-        }
-        else if(GameManager.instance.adminMenu.activeSelf && isUpdate)
-        {
-            if (GameManager.instance.isAgentLoaded)
+            if (RLManager.instance.isAgentInitialized)
             {
                 resumeButton.SetActive(true);
                 saveButton.SetActive(true);
@@ -69,122 +65,142 @@ public class UIManager : MonoBehaviour
     }
     public void UpdateSettingsDisplay()
     {
-        maxEpsisodeIpt.text = GameManager.instance.settings.episodeMax.ToString();
-        stepsEpsIpt.text = GameManager.instance.settings.epiMaxSteps.ToString();
-        frameStateIpt.text = GameManager.instance.settings.framesPerState.ToString();
-        frameBufferIpt.text = GameManager.instance.settings.frameBufferSize.ToString();
-        epsilonIpt.text = GameManager.instance.settings.epsilon.ToString();
-        epsMinIpt.text = GameManager.instance.settings.epsilonMin.ToString();
-        epsChangeIpt.text = GameManager.instance.settings.epsChangeFactor.ToString();
-        expBufferSizeIpt.text = GameManager.instance.settings.expBufferSize.ToString();
-        miniBatchInpt.text = GameManager.instance.settings.miniBatchSize.ToString();
-        netCopyRateIpt.text = GameManager.instance.settings.netCopyRate.ToString();
-        gammaIpt.text = GameManager.instance.settings.gamma.ToString();
-        learningRateIpt.text = GameManager.instance.settings.learningRate.ToString();
-        beta1Ipt.text = GameManager.instance.settings.beta1.ToString();
-        beta2Ipt.text = GameManager.instance.settings.beta2.ToString();
-        epsHatIpt.text = GameManager.instance.settings.epsilonHat.ToString();
-        gradientThreshIpt.text = GameManager.instance.settings.gradientThreshold.ToString();
-        maxViewIpt.text = GameManager.instance.settings.maxViewDistance.ToString();
-        fovIpt.text = GameManager.instance.settings.fieldOfView.ToString();
-        colDetectIpt.text = GameManager.instance.settings.collisionDetectRange.ToString();
-        asIpt.text = GameManager.instance.settings.autoSaveEpisode.ToString();
+        maxEpsisodeIpt.text = RLManager.instance.settings.episodeMax.ToString();
+        stepsEpsIpt.text = RLManager.instance.settings.epiMaxSteps.ToString();
+        frameStateIpt.text = RLManager.instance.settings.framesPerState.ToString();
+        frameBufferIpt.text = RLManager.instance.settings.frameBufferSize.ToString();
+        epsilonIpt.text = RLManager.instance.settings.epsilon.ToString();
+        epsMinIpt.text = RLManager.instance.settings.epsilonMin.ToString();
+        epsDecayIpt.text = RLManager.instance.settings.epsDecayRate.ToString();
+        expBufferSizeIpt.text = RLManager.instance.settings.expBufferSize.ToString();
+        miniBatchInpt.text = RLManager.instance.settings.miniBatchSize.ToString();
+        netCopyRateIpt.text = RLManager.instance.settings.netCopyRate.ToString();
+        gammaIpt.text = RLManager.instance.settings.gamma.ToString();
+        learningRateIpt.text = RLManager.instance.settings.learningRate.ToString();
+        beta1Ipt.text = RLManager.instance.settings.beta1.ToString();
+        beta2Ipt.text = RLManager.instance.settings.beta2.ToString();
+        epsHatIpt.text = RLManager.instance.settings.epsilonHat.ToString();
+        gradientThreshIpt.text = RLManager.instance.settings.gradientThreshold.ToString();
+        maxViewIpt.text = RLManager.instance.settings.maxViewDistance.ToString();
+        fovIpt.text = RLManager.instance.settings.fieldOfView.ToString();
+        colDetectIpt.text = RLManager.instance.settings.collisionDetectRange.ToString();
+        asIpt.text = RLManager.instance.settings.autoSaveEpisode.ToString();
+        if (rlComponent)
+        {
+            trainingToggle.isOn = rlComponent.isTraining;
+        }
+        else
+        {
+            trainingToggle.isOn = true;
+        }
     }
     public void UpdateAgentName()
     {
-        GameManager.instance.settings.agentName = fileIpt.text;
+        RLManager.instance.settings.agentName = fileIpt.text;
     }
     public void UpdateEpiMax()
     {
-        GameManager.instance.settings.episodeMax = int.Parse(maxEpsisodeIpt.text);
+        RLManager.instance.settings.episodeMax = int.Parse(maxEpsisodeIpt.text);
     }
     public void UpdateEpiMaxSteps()
     {
-        GameManager.instance.settings.epiMaxSteps = int.Parse(stepsEpsIpt.text);
+        RLManager.instance.settings.epiMaxSteps = int.Parse(stepsEpsIpt.text);
     }
     public void UpdateFramesPerState()
     {
-        GameManager.instance.settings.framesPerState = int.Parse(frameStateIpt.text);
+        RLManager.instance.settings.framesPerState = int.Parse(frameStateIpt.text);
     }
     public void UpdateFrameBufferSize()
     {
-        GameManager.instance.settings.frameBufferSize = int.Parse(frameBufferIpt.text);
+        RLManager.instance.settings.frameBufferSize = int.Parse(frameBufferIpt.text);
     }
     public void UpdateEpsilon()
     {
-        GameManager.instance.settings.epsilon = float.Parse(epsilonIpt.text);
+        RLManager.instance.settings.epsilon = float.Parse(epsilonIpt.text);
     }
     public void UpdateEpsilonMin()
     {
-        GameManager.instance.settings.epsilonMin = float.Parse(epsMinIpt.text);
+        RLManager.instance.settings.epsilonMin = float.Parse(epsMinIpt.text);
     }
     public void UpdateEpsChangeFactor()
     {
-        GameManager.instance.settings.epsChangeFactor = float.Parse(epsChangeIpt.text);
+        RLManager.instance.settings.epsDecayRate = float.Parse(epsDecayIpt.text);
     }
     public void UpdateExpBufferSize()
     {
-        GameManager.instance.settings.expBufferSize = int.Parse(expBufferSizeIpt.text);
+        RLManager.instance.settings.expBufferSize = int.Parse(expBufferSizeIpt.text);
     }
     public void UpdateMiniBatchSize()
     {
-        GameManager.instance.settings.miniBatchSize = int.Parse(miniBatchInpt.text);
+        RLManager.instance.settings.miniBatchSize = int.Parse(miniBatchInpt.text);
     }
     public void UpdateNetCopyRate()
     {
-        GameManager.instance.settings.netCopyRate = int.Parse(netCopyRateIpt.text);
+        RLManager.instance.settings.netCopyRate = int.Parse(netCopyRateIpt.text);
     }
     public void UpdateGamma()
     {
-        GameManager.instance.settings.gamma = float.Parse(gammaIpt.text);
+        RLManager.instance.settings.gamma = float.Parse(gammaIpt.text);
     }
     public void UpdateLearningRate()
     {
-        GameManager.instance.settings.learningRate = double.Parse(learningRateIpt.text);
+        RLManager.instance.settings.learningRate = double.Parse(learningRateIpt.text);
     }
     public void UpdateBeta1()
     {
-        GameManager.instance.settings.beta1 = float.Parse(beta1Ipt.text);
+        RLManager.instance.settings.beta1 = float.Parse(beta1Ipt.text);
     }
     public void UpdateBeta2()
     {
-        GameManager.instance.settings.beta2 = float.Parse(beta2Ipt.text);
+        RLManager.instance.settings.beta2 = float.Parse(beta2Ipt.text);
     }
     public void UpdateEpsilonHat()
     {
-        GameManager.instance.settings.epsilonHat = double.Parse(epsHatIpt.text);
+        RLManager.instance.settings.epsilonHat = double.Parse(epsHatIpt.text);
     }
     public void UpdateGradientThreshold()
     {
-        GameManager.instance.settings.gradientThreshold = double.Parse(gradientThreshIpt.text);
+        RLManager.instance.settings.gradientThreshold = double.Parse(gradientThreshIpt.text);
     }
     public void UpdateMaxViewDistance()
     {
-        GameManager.instance.settings.maxViewDistance = float.Parse(maxViewIpt.text);
+        RLManager.instance.settings.maxViewDistance = float.Parse(maxViewIpt.text);
     }
     public void UpdateFoV()
     {
-        GameManager.instance.settings.fieldOfView = float.Parse(fovIpt.text);
+        RLManager.instance.settings.fieldOfView = float.Parse(fovIpt.text);
     }
     public void UpdateColDetectRange()
     {
-        GameManager.instance.settings.collisionDetectRange = float.Parse(colDetectIpt.text);
+        RLManager.instance.settings.collisionDetectRange = float.Parse(colDetectIpt.text);
+    }
+
+    public void UpdateTrainingToggle()
+    {
+        if (rlComponent)
+        {
+            rlComponent.isTraining = trainingToggle.isOn;
+        }
+        else
+        {
+            isTrainingTemp = trainingToggle.isOn;
+        }
     }
     public void UpdateHUD()
     {
-        episodeNumber.text = dqn.episodeNum.ToString();
-        maxEpisodes.text = GameManager.instance.settings.episodeMax.ToString();
-        epochs.text = dqn.epochs.ToString();
-        totalReward.text = dqn.totalReward.ToString();
-        currentReward.text = dqn.episodeReward.ToString();
-        epsilon.text = GameManager.instance.settings.epsilon.ToString();
-        epsilonMin.text = GameManager.instance.settings.epsilonMin.ToString();
-        episodeSteps.text = dqn.epiSteps.ToString();
-        episodeMaxSteps.text = GameManager.instance.settings.epiMaxSteps.ToString();
+        episodeNumber.text = rlComponent.episodeNum.ToString();
+        maxEpisodes.text = RLManager.instance.settings.episodeMax.ToString();
+        epochs.text = rlComponent.epochs.ToString();
+        totalReward.text = rlComponent.totalReward.ToString();
+        currentReward.text = rlComponent.episodeReward.ToString();
+        epsilon.text = RLManager.instance.settings.epsilon.ToString();
+        epsilonMin.text = RLManager.instance.settings.epsilonMin.ToString();
+        episodeSteps.text = rlComponent.epiSteps.ToString();
+        episodeMaxSteps.text = RLManager.instance.settings.epiMaxSteps.ToString();
 
-        if (dqn.epochs % GameManager.instance.costUpdateInEpochs == 0 && dqn.cost != null)
+        if (rlComponent.epochs % RLManager.instance.costUpdateInEpochs == 0 && rlComponent.cost != null)
         {
-            currentCost.text = dqn.cost.ToString();
+            currentCost.text = rlComponent.cost.ToString();
         }
     }
     public void ResumeGame()
@@ -194,31 +210,31 @@ public class UIManager : MonoBehaviour
     }
     public void SaveAgent()
     {
-        fileName = fileIpt.text + "_e" + dqn.episodeNum;
+        fileName = fileIpt.text + "_e" + rlComponent.episodeNum;
         settingsName = fileName + "_settings.gd";
         fileName = fileName + ".gd";
         Debug.Log("Saving..." + fileName);
-        SaveLoad.SaveNet(fileName, GameManager.instance.dqn);
+        SaveLoad.SaveNet(fileName, rlComponent);
         SaveLoad.SaveSettings(settingsName);
-        dqn = GameManager.instance.dqn;
     }
     public void LoadAgent()
     {
-        if (GameManager.instance.dqn != null)
+        if (RLManager.instance.rlComponent != null)
         {
-            Destroy(GameManager.instance.agentObjectsList[0]);
-            GameManager.instance.agentObjectsList.Clear();
+            Destroy(RLManager.instance.agentObjectsList[0]);
+            RLManager.instance.agentObjectsList.Clear();
         }
-        GameManager.instance.SpawnAgent();
+        RLManager.instance.SpawnAgent();
+        rlComponent = RLManager.instance.rlComponent;
         fileName = fileIpt.text;
         settingsName = fileName + "_settings.gd";
         fileName = fileName + ".gd";
-        Debug.Log("Loading..." + fileName);
-        SaveLoad.LoadNet(fileName, GameManager.instance.dqn);
-        GameManager.instance.gameState = "continue";
+        SaveLoad.LoadNet(fileName, rlComponent);
         SaveLoad.LoadSettings(settingsName);
         UpdateSettingsDisplay();
-        dqn = GameManager.instance.dqn;
+        rlComponent.Init_New_Session(false, isTrainingTemp);
+        Debug.Log("Loading..." + fileName);
+        GameManager.instance.gameState = "continue";
     }
     public void NewAgent()
     {
@@ -229,20 +245,20 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            if (GameManager.instance.dqn != null)
+            if (RLManager.instance.rlComponent != null)
             {
-                Destroy(GameManager.instance.agentObjectsList[0]);
-                GameManager.instance.agentObjectsList.Clear();
+                Destroy(RLManager.instance.agentObjectsList[0]);
+                RLManager.instance.agentObjectsList.Clear();
             }
             settingsName = fileName + "_new_settings.gd";
             fileName = fileName + "_new.gd";
-            Debug.Log("New Game..." + fileName);
-
-            GameManager.instance.gameState = "continue";
-            GameManager.instance.SpawnAgent();
-            dqn = GameManager.instance.dqn;
-            SaveLoad.SaveNet(fileName, dqn);
+            RLManager.instance.SpawnAgent();
+            rlComponent = RLManager.instance.rlComponent;
+            rlComponent.Init_New_Session(true, isTrainingTemp);
+            SaveLoad.SaveNet(fileName, rlComponent);
             SaveLoad.SaveSettings(settingsName);
+            Debug.Log("New Game..." + fileName);
+            GameManager.instance.gameState = "continue";
         }
     }
 }
