@@ -16,16 +16,18 @@ MonoBehaviour:
   agentID: 1
   episodeMax: 10000
   framesPerState: 3
-  frameBufferSize: 120000
+  frameBufferSize: 1200000
   epiMaxSteps: 1000
   epsilon: 1
   epsilonMin: 0.1
-  epsDecayRate: 500000
-  expBufferSize: 100000
-  miniBatchSize: 32
+  epsDecayRate: 1000000
+  expBufferSize: 1000000
+  miniBatchSize: 50
   netCopyRate: 5000
   gamma: 0.99
-  learningRate: 0.01
+  learningRate: 0.001
+  actorLearningRate: 0.0001
+  criticLearningRate: 0.0001
   beta1: 0.9
   beta2: 0.999
   epsilonHat: 0.000000001
@@ -34,4 +36,7 @@ MonoBehaviour:
   fieldOfView: 45
   collisionDetectRange: 50
   autoSaveEpisode: 10
-  activations: 010000000100000001000000
+  algo: 0
+  activations: 01000000010000000100000001000000
+  criticActivations: 000000000000000005000000
+  actorActivations: 000000000000000004000000

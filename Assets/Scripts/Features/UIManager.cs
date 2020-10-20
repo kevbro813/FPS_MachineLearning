@@ -36,14 +36,20 @@ public class UIManager : MonoBehaviour
     public Text epsilonMin;
     public Text episodeSteps;
     public Text episodeMaxSteps;
+    public Text episodeAverage;
     private bool isUpdate;
     public GameObject resumeButton;
     public GameObject saveButton;
     public Text currentCost;
     public Toggle trainingToggle;
+    public Toggle loadSettingsToggle;
     private bool isTrainingTemp;
+    private bool isLoadSettings;
+
     private void Start()
     {
+        isLoadSettings = true;
+        isTrainingTemp = true;
         UpdateSettingsDisplay();
     }
     // Update is called once per frame
@@ -85,14 +91,8 @@ public class UIManager : MonoBehaviour
         fovIpt.text = RLManager.instance.settings.fieldOfView.ToString();
         colDetectIpt.text = RLManager.instance.settings.collisionDetectRange.ToString();
         asIpt.text = RLManager.instance.settings.autoSaveEpisode.ToString();
-        if (rlComponent)
-        {
-            trainingToggle.isOn = rlComponent.isTraining;
-        }
-        else
-        {
-            trainingToggle.isOn = true;
-        }
+        loadSettingsToggle.isOn = isLoadSettings;
+        trainingToggle.isOn = isTrainingTemp;
     }
     public void UpdateAgentName()
     {
@@ -174,17 +174,14 @@ public class UIManager : MonoBehaviour
     {
         RLManager.instance.settings.collisionDetectRange = float.Parse(colDetectIpt.text);
     }
+    public void UpdateLoadSettingsToggle()
+    {
+        isLoadSettings = loadSettingsToggle.isOn;
+    }
 
     public void UpdateTrainingToggle()
     {
-        if (rlComponent)
-        {
-            rlComponent.isTraining = trainingToggle.isOn;
-        }
-        else
-        {
-            isTrainingTemp = trainingToggle.isOn;
-        }
+        isTrainingTemp = trainingToggle.isOn;
     }
     public void UpdateHUD()
     {
@@ -197,15 +194,20 @@ public class UIManager : MonoBehaviour
         epsilonMin.text = RLManager.instance.settings.epsilonMin.ToString();
         episodeSteps.text = rlComponent.epiSteps.ToString();
         episodeMaxSteps.text = RLManager.instance.settings.epiMaxSteps.ToString();
-
+        
         if (rlComponent.epochs % RLManager.instance.costUpdateInEpochs == 0 && rlComponent.cost != null)
         {
             currentCost.text = rlComponent.cost.ToString();
         }
     }
+    public void UpdateEpisodeAverage(double totalReward, int episodeNumber)
+    {
+        episodeAverage.text = (totalReward / episodeNumber).ToString();
+    }
     public void ResumeGame()
     {
         GameManager.instance.gameState = "continue";
+        rlComponent.Init_Settings();
         SaveLoad.SaveSettings(settingsName);
     }
     public void SaveAgent()
@@ -230,9 +232,20 @@ public class UIManager : MonoBehaviour
         settingsName = fileName + "_settings.gd";
         fileName = fileName + ".gd";
         SaveLoad.LoadNet(fileName, rlComponent);
-        SaveLoad.LoadSettings(settingsName);
-        UpdateSettingsDisplay();
-        rlComponent.Init_New_Session(false, isTrainingTemp);
+        if (isLoadSettings)
+        {
+            SaveLoad.LoadSettings(settingsName);
+            UpdateSettingsDisplay();
+        }
+
+        if (RLManager.instance.settings.algo == Settings.Algorithm.Double_DQN)
+        {
+            rlComponent.Init_New_DDQN_Session(false, isTrainingTemp, Settings.Algorithm.Double_DQN);
+        }
+        else if (RLManager.instance.settings.algo == Settings.Algorithm.Proximal_Policy_Optimization)
+        {
+            rlComponent.Init_New_PPO_Session(false, isTrainingTemp, Settings.Algorithm.Proximal_Policy_Optimization);
+        }
         Debug.Log("Loading..." + fileName);
         GameManager.instance.gameState = "continue";
     }
@@ -254,7 +267,14 @@ public class UIManager : MonoBehaviour
             fileName = fileName + "_new.gd";
             RLManager.instance.SpawnAgent();
             rlComponent = RLManager.instance.rlComponent;
-            rlComponent.Init_New_Session(true, isTrainingTemp);
+            if (RLManager.instance.settings.algo == Settings.Algorithm.Double_DQN)
+            {
+                rlComponent.Init_New_DDQN_Session(true, isTrainingTemp, Settings.Algorithm.Double_DQN);
+            }
+            else if (RLManager.instance.settings.algo == Settings.Algorithm.Proximal_Policy_Optimization)
+            {
+                rlComponent.Init_New_PPO_Session(true, isTrainingTemp, Settings.Algorithm.Proximal_Policy_Optimization);
+            }
             SaveLoad.SaveNet(fileName, rlComponent);
             SaveLoad.SaveSettings(settingsName);
             Debug.Log("New Game..." + fileName);

@@ -89,6 +89,7 @@ public class GameManager : MonoBehaviour
     public void DoActive()
     {
         RLManager.instance.isAgentInitialized = true;
+        RLManager.instance.isSessionPaused = false;
         Time.timeScale = 1;
         adminMenu.SetActive(false);
     }
@@ -97,14 +98,15 @@ public class GameManager : MonoBehaviour
         // Disable all AI movement
         Time.timeScale = 0;
         isPaused = false;
+        RLManager.instance.isSessionPaused = true;
         adminMenu.SetActive(true);
     }
     public void DoContinue()
     {
-        // Disable all AI movement
         Time.timeScale = 1;
         isAdminMenu = false;
         isPaused = false;
+        RLManager.instance.isSessionPaused = false;
         adminMenu.SetActive(false);
     }
     public void DoQuit()
@@ -123,6 +125,7 @@ public class GameManager : MonoBehaviour
         // Disable all AI movement
         Time.timeScale = 0;
         isAdminMenu = false;
+        RLManager.instance.isSessionPaused = true;
         adminMenu.SetActive(false);
     }
 }

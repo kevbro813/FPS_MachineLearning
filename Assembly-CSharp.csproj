@@ -68,6 +68,7 @@
     <Compile Include="Assets\Scripts\Deep RL\Environment.cs" />
     <Compile Include="Assets\Scripts\Deep RL\MathFunctions.cs" />
     <Compile Include="Assets\Scripts\Deep RL\NeuralNetwork.cs" />
+    <Compile Include="Assets\Scripts\Deep RL\PPO.cs" />
     <Compile Include="Assets\Scripts\Deep RL\RLComponent.cs" />
     <Compile Include="Assets\Scripts\Deep RL\RLManager.cs" />
     <Compile Include="Assets\Scripts\Deep RL\Settings.cs" />

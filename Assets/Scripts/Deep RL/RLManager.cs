@@ -21,6 +21,8 @@ public class RLManager : MonoBehaviour
     public float spawnMax_X;
     public float spawnMin_Z;
     public float spawnMax_Z;
+    public bool isSessionPaused;
+
     private void Awake()
     {
         // Singleton pattern
@@ -38,7 +40,7 @@ public class RLManager : MonoBehaviour
     }
     private void Start()
     {
-        rlComponentTester.Init_New_Session(true, true);
+        rlComponentTester.Init_New_DDQN_Session(true, true, Settings.Algorithm.Double_DQN);
         isAgentInitialized = false;
     }
     private void LoadDefaultSettings()
@@ -57,6 +59,8 @@ public class RLManager : MonoBehaviour
         settings.netCopyRate = defaultSettings.netCopyRate;
         settings.gamma = defaultSettings.gamma;
         settings.learningRate = defaultSettings.learningRate;
+        settings.actorLearningRate = defaultSettings.actorLearningRate;
+        settings.criticLearningRate = defaultSettings.criticLearningRate;
         settings.beta1 = defaultSettings.beta1;
         settings.beta2 = defaultSettings.beta2;
         settings.epsilonHat = defaultSettings.epsilonHat;
@@ -66,6 +70,9 @@ public class RLManager : MonoBehaviour
         settings.collisionDetectRange = defaultSettings.collisionDetectRange;
         settings.autoSaveEpisode = defaultSettings.autoSaveEpisode;
         settings.activations = defaultSettings.activations;
+        settings.criticActivations = defaultSettings.criticActivations;
+        settings.actorActivations = defaultSettings.actorActivations;
+        settings.algo = defaultSettings.algo;
     }
 
     public void LoadSettings()
@@ -84,6 +91,8 @@ public class RLManager : MonoBehaviour
         settings.netCopyRate = loadSettings.netCopyRate;
         settings.gamma = loadSettings.gamma;
         settings.learningRate = loadSettings.learningRate;
+        settings.actorLearningRate = loadSettings.actorLearningRate;
+        settings.criticLearningRate = loadSettings.criticLearningRate;
         settings.beta1 = loadSettings.beta1;
         settings.beta2 = loadSettings.beta2;
         settings.epsilonHat = loadSettings.epsilonHat;
@@ -93,6 +102,9 @@ public class RLManager : MonoBehaviour
         settings.collisionDetectRange = loadSettings.collisionDetectRange;
         settings.autoSaveEpisode = loadSettings.autoSaveEpisode;
         settings.activations = loadSettings.activations;
+        settings.criticActivations = defaultSettings.criticActivations;
+        settings.actorActivations = defaultSettings.actorActivations;
+        settings.algo = loadSettings.algo;
     }
     public void RandomSpawn()
     {

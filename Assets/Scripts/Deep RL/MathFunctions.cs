@@ -7,7 +7,7 @@ public class MathFunctions
     // Activation Functions
     public double Relu(double value)
     {
-        return Math.Max(0.0d, value);
+        return Math.Max(0, value);
     }
 
     public double LeakyRelu(double value)
@@ -17,7 +17,7 @@ public class MathFunctions
 
     public double Sigmoid(double value)
     {
-        return 1.0d / (1.0d + Math.Exp(-value));
+        return 1 / (1 + Math.Exp(-value));
     }
 
     public double Tanh(double value)

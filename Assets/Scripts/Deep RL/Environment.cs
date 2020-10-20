@@ -17,8 +17,8 @@ public class Environment
     public int fbIndex;
     public int fbCount;
     public bool isOnObjective = false;
-    private int frameBufferSize;
-    private int framesPerState;
+    public int frameBufferSize;
+    public int framesPerState;
     private int inputsPerFrame;
     private int inputsPerState;
     private float collisionDetectRange;
@@ -41,21 +41,21 @@ public class Environment
     // Get the next_Frame array data from raycasts, colliders, etc.
     public double[] GetNextFrame()
     {
-        //CollisionDetection(); // CollisionDetection function will collect the distance to objects from the raycasts pointed in the 8 compass directions
+        CollisionDetection(); // CollisionDetection function will collect the distance to objects from the raycasts pointed in the 8 compass directions
 
         double[] nextFrame = new double[inputsPerFrame]; // Create a float array to hold the next frame
 
         // Populate the next_Frame array with the respective values
         nextFrame[0] = tf.position.x;
-        //nextFrame[1] = tf.position.z;
-        //nextFrame[2] = distancesToObstacles[0];
-        //nextFrame[3] = distancesToObstacles[1];
-        //nextFrame[4] = distancesToObstacles[2];
-        //nextFrame[5] = distancesToObstacles[3];
-        //nextFrame[6] = distancesToObstacles[4];
-        //nextFrame[7] = distancesToObstacles[5];
-        //nextFrame[8] = distancesToObstacles[6];
-        //nextFrame[9] = distancesToObstacles[7];
+        nextFrame[1] = tf.position.z;
+        nextFrame[2] = distancesToObstacles[0];
+        nextFrame[3] = distancesToObstacles[1];
+        nextFrame[4] = distancesToObstacles[2];
+        nextFrame[5] = distancesToObstacles[3];
+        nextFrame[6] = distancesToObstacles[4];
+        nextFrame[7] = distancesToObstacles[5];
+        nextFrame[8] = distancesToObstacles[6];
+        nextFrame[9] = distancesToObstacles[7];
         //next_Frame[10] = tf.transform.eulerAngles.y;
 
         return nextFrame; // Return next_Frame
@@ -128,14 +128,14 @@ public class Environment
         {
             reward--;
         }
-        //for (int i = 0; i < distancesToObstacles.Length; i++)
-        //{
-        //    if (distancesToObstacles[i] < 2)
-        //    {
-        //        //reward -= (2 - distancesToObstacles[i]); // TODO: FIX THIS... Bool to indicate if a raycast hits a wall. If it is false and distanceToObstacles is 0, then it should set distanceToObstacles to max number to avoid confusion with points.
-        //        reward -= 5;
-        //    }
-        //}
+        for (int i = 0; i < distancesToObstacles.Length; i++)
+        {
+            if (distancesToObstacles[i] < 1)
+            {
+                //reward -= (2 - distancesToObstacles[i]); // TODO: FIX THIS... Bool to indicate if a raycast hits a wall. If it is false and distanceToObstacles is 0, then it should set distanceToObstacles to max number to avoid confusion with points.
+                reward--;
+            }
+        }
         return reward;
     }
 

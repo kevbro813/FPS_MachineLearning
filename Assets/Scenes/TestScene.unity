@@ -1167,7 +1167,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 855039283}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 113.6, y: 0, z: 185.79}
+  m_LocalPosition: {x: 105.88, y: 0, z: 189.47}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1196,7 +1196,10 @@ MonoBehaviour:
   settings:
     agentName: 
     agentID: 0
+    algo: 0
     activations: 
+    criticActivations: 
+    actorActivations: 
     layers: 
     episodeMax: 0
     framesPerState: 0
@@ -1210,6 +1213,8 @@ MonoBehaviour:
     netCopyRate: 0
     gamma: 0
     learningRate: 0
+    actorLearningRate: 0
+    criticLearningRate: 0
     beta1: 0
     beta2: 0
     epsilonHat: 0
@@ -1221,7 +1226,10 @@ MonoBehaviour:
   loadSettings:
     agentName: 
     agentID: 0
+    algo: 0
     activations: 
+    criticActivations: 
+    actorActivations: 
     layers: 
     episodeMax: 0
     framesPerState: 0
@@ -1235,6 +1243,8 @@ MonoBehaviour:
     netCopyRate: 0
     gamma: 0
     learningRate: 0
+    actorLearningRate: 0
+    criticLearningRate: 0
     beta1: 0
     beta2: 0
     epsilonHat: 0
@@ -1245,10 +1255,11 @@ MonoBehaviour:
     autoSaveEpisode: 0
   isAgentInitialized: 0
   costUpdateInEpochs: 40
-  spawnMin_X: 113
-  spawnMax_X: 113
-  spawnMin_Z: 185
-  spawnMax_Z: 185
+  spawnMin_X: 106
+  spawnMax_X: 120
+  spawnMin_Z: 175
+  spawnMax_Z: 190
+  isSessionPaused: 0
 --- !u!4 &970822767 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5964346225909780170, guid: 3829c886064b2ed478cee31500db42e4,
@@ -1777,7 +1788,7 @@ PrefabInstance:
     - target: {fileID: 5964346225909780170, guid: 3829c886064b2ed478cee31500db42e4,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 73.9
+      value: 82.46
       objectReference: {fileID: 0}
     - target: {fileID: 5964346225909780170, guid: 3829c886064b2ed478cee31500db42e4,
         type: 3}
@@ -1832,12 +1843,12 @@ PrefabInstance:
     - target: {fileID: 5964346225909780170, guid: 3829c886064b2ed478cee31500db42e4,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 2
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 5964346225909780170, guid: 3829c886064b2ed478cee31500db42e4,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 2
+      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3829c886064b2ed478cee31500db42e4, type: 3}
@@ -2001,36 +2012,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6706635946778598702, guid: a896cd6da2221d3429d8f8e4d968c3e2,
-        type: 3}
-      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6706635946778598702, guid: a896cd6da2221d3429d8f8e4d968c3e2,
-        type: 3}
-      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6706635946778598702, guid: a896cd6da2221d3429d8f8e4d968c3e2,
-        type: 3}
-      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6706635946778598702, guid: a896cd6da2221d3429d8f8e4d968c3e2,
-        type: 3}
-      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 86778498}
-    - target: {fileID: 6706635946778598702, guid: a896cd6da2221d3429d8f8e4d968c3e2,
-        type: 3}
-      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: UpdateTrainingToggle
-      objectReference: {fileID: 0}
-    - target: {fileID: 6706635946778598702, guid: a896cd6da2221d3429d8f8e4d968c3e2,
-        type: 3}
-      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a896cd6da2221d3429d8f8e4d968c3e2, type: 3}

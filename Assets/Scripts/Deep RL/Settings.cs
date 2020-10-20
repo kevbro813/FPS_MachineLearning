@@ -8,10 +8,15 @@ public class Settings
     public string agentName;
     public int agentID;
     [Space(10)]
-
+    [Header("RL Algorithm")]
+    public Algorithm algo;
+    public enum Algorithm { Double_DQN, Proximal_Policy_Optimization };
+    [Space(10)]
     [Header("Activation Functions")]
     public LayerActivations[] activations;
-    [HideInInspector] public enum LayerActivations { Relu, LeakyRelu, Sigmoid, Tanh, Softmax }
+    public LayerActivations[] criticActivations;
+    public LayerActivations[] actorActivations;
+    [HideInInspector] public enum LayerActivations { Relu, LeakyRelu, Sigmoid, Tanh, Softmax, None }
     [Space(10)]
 
     [Header("Hyperparameters")]
@@ -29,6 +34,8 @@ public class Settings
     // Research the following settings
     public float gamma; // Discount factor
     public double learningRate;
+    public double actorLearningRate;
+    public double criticLearningRate;
     public float beta1;
     public float beta2;
     public double epsilonHat; // I have seen set between 10^-8 and 10^-5 (AKA 1e-8 and 1e-5), also 1 or 0.1 have been suggested

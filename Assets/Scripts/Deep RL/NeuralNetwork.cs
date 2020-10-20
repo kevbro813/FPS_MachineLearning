@@ -13,7 +13,7 @@ public class NeuralNetwork
     /// Neural Network Constructor
     /// </summary>
     /// <param name="layers"></param>
-    public NeuralNetwork(int[] layerTemplate)
+    public NeuralNetwork(int[] layerTemplate) // Used to create network for DQN
     {
         this.neuralNetStructure = new int[layerTemplate.Length]; //  Create a new array of neural layers using the size of the layers parameter
         
@@ -23,9 +23,20 @@ public class NeuralNetwork
         layers = new Layer[layerTemplate.Length - 1];
 
         for (int i = 0; i < layers.Length; i++)
-            layers[i] = new Layer(layerTemplate[i], layerTemplate[i + 1]);
+            layers[i] = new Layer(layerTemplate[i], layerTemplate[i + 1], i);
     }
+    public NeuralNetwork(int[] layerTemplate, bool isActor) // Used to create network for PPO
+    {
+        this.neuralNetStructure = new int[layerTemplate.Length]; //  Create a new array of neural layers using the size of the layers parameter
 
+        for (int i = 0; i < layerTemplate.Length; i++) // Iterate through each layer
+            this.neuralNetStructure[i] = layerTemplate[i]; // Set the number of neurons in each layer
+
+        layers = new Layer[layerTemplate.Length - 1];
+
+        for (int i = 0; i < layers.Length; i++)
+            layers[i] = new Layer(layerTemplate[i], layerTemplate[i + 1], i, isActor);
+    }
     public double[] FeedForward(double[] inputs)
     {
         layers[0].FeedForward(inputs, 0);
@@ -59,7 +70,6 @@ public class Layer
 {
     private int inputQty;
     private int outputQty;
-
     public double[] outputs;
     public double[] inputs;
     public double[][] weights;
@@ -77,40 +87,60 @@ public class Layer
     private double beta2;
     private double epsilonHat;
 
-    public Settings.LayerActivations[] activationPerLayer;
+    public Settings.LayerActivations activation;
 
-    public Layer(int numberOfInputs, int numberOfOutputs)
+    public Layer(int numberOfInputs, int numberOfOutputs, int layerIndex, bool isActor)
+    {
+        Init_Net_Variables(numberOfInputs, numberOfOutputs);
+        // if actorNet
+        if (isActor)
+        {
+            activation = RLManager.instance.settings.actorActivations[layerIndex];
+            learningRate = RLManager.instance.settings.actorLearningRate;
+        }
+        else
+        {
+            // if criticNet
+            activation = RLManager.instance.settings.criticActivations[layerIndex];
+            learningRate = RLManager.instance.settings.criticLearningRate;
+        }
+        Init_Weights();
+        Init_Biases();
+    }
+    public Layer(int numberOfInputs, int numberOfOutputs, int layerIndex)
+    {
+        Init_Net_Variables(numberOfInputs, numberOfOutputs);
+        activation = RLManager.instance.settings.activations[layerIndex];
+        learningRate = RLManager.instance.settings.learningRate;
+        Init_Weights();
+        Init_Biases();
+    }
+
+    public void Init_Net_Variables(int numberOfInputs, int numberOfOutputs)
     {
         this.inputQty = numberOfInputs;
         this.outputQty = numberOfOutputs;
-
         outputs = new double[numberOfOutputs];
         inputs = new double[numberOfInputs];
         weights = new double[numberOfOutputs][];
         weightsDelta = new double[numberOfOutputs][];
-        gamma = new double[numberOfOutputs];
-        error = new double[numberOfOutputs];
-        biases = new double[numberOfOutputs];
-        activationPerLayer = RLManager.instance.settings.activations;
-        learningRate = RLManager.instance.settings.learningRate;
-        beta1 = RLManager.instance.settings.beta1;
-        beta2 = RLManager.instance.settings.beta2;
-        epsilonHat = RLManager.instance.settings.epsilonHat;
-
         for (int i = 0; i < weights.Length; i++)
         {
             weights[i] = new double[numberOfInputs];
             weightsDelta[i] = new double[numberOfInputs];
         }
+        gamma = new double[numberOfOutputs];
+        error = new double[numberOfOutputs];
+        biases = new double[numberOfOutputs];
+        beta1 = RLManager.instance.settings.beta1;
+        beta2 = RLManager.instance.settings.beta2;
+        epsilonHat = RLManager.instance.settings.epsilonHat;
         // Adam Optimizer
         t = 0;
         firstMoment = new double[numberOfOutputs, numberOfInputs];
         secondMoment = new double[numberOfOutputs, numberOfInputs];
         firstMomentBias = new double[numberOfOutputs];
         secondMomentBias = new double[numberOfOutputs];
-
-        Init_Weights();
-        Init_Biases();
     }
 
     public void Init_Biases()
@@ -138,10 +168,10 @@ public class Layer
                 outputs[i] += inputs[j] * weights[i][j];
             }
             
-            outputs[i] = ActivationFunctions(outputs[i] + biases[i], layer);
+            outputs[i] = ActivationFunctions(outputs[i] + biases[i]);
         }
 
-        if (activationPerLayer[layer] == Settings.LayerActivations.Softmax) // Apply softmax to output layer if necessary
+        if (activation == Settings.LayerActivations.Softmax) // Apply softmax to output layer if necessary
             outputs = RLManager.math.Softmax(outputs);
 
         //Debug.Log(outputs[outputs.Length - 1]);
@@ -189,7 +219,7 @@ public class Layer
             error[i] = targets[i] - outputs[i];
 
         for (int i = 0; i < outputQty; i++)
-            gamma[i] = error[i] * ActivationDerivatives(outputs[i], lay);
+            gamma[i] = error[i] * ActivationDerivatives(outputs[i]);
 
         for (int i = 0; i < outputQty; i++)
         {
@@ -208,7 +238,7 @@ public class Layer
                 gamma[i] += gammaForward[j] * weightsForward[j][i];
             }
 
-            gamma[i] *= ActivationDerivatives(outputs[i], lay);
+            gamma[i] *= ActivationDerivatives(outputs[i]);
         }
 
         for (int i = 0; i < outputQty; i++)
@@ -217,9 +247,9 @@ public class Layer
                 weightsDelta[i][j] = gamma[i] * inputs[j];
         }
     }
-    public double ActivationFunctions(double value, int layer)
+    public double ActivationFunctions(double value)
     {
-        switch (activationPerLayer[layer])
+        switch (activation)
         {
             case Settings.LayerActivations.Relu:
                 return RLManager.math.Relu(value);
@@ -231,13 +261,15 @@ public class Layer
                 return RLManager.math.Tanh(value);
             case Settings.LayerActivations.Softmax: // Softmax relies on all of the output values to be calculated. Therefore, just return the value and softmax will be applied after all outputs are calculated
                 return value;
+            case Settings.LayerActivations.None:
+                return value;
             default:
                 return RLManager.math.Relu(value);
         }
     }
-    public double ActivationDerivatives(double value, int layer)
+    public double ActivationDerivatives(double value)
     {
-        switch (activationPerLayer[layer])
+        switch (activation)
         {
             case Settings.LayerActivations.Relu:
                 return RLManager.math.ReluDerivative(value);
@@ -249,6 +281,8 @@ public class Layer
                 return RLManager.math.TanhDerivative(value);
             case Settings.LayerActivations.Softmax:
                 return RLManager.math.SoftmaxDerivative(value);
+            case Settings.LayerActivations.None:
+                return 1;
             default:
                 return RLManager.math.ReluDerivative(value);
         }
