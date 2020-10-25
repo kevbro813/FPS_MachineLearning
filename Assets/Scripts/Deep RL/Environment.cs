@@ -46,8 +46,8 @@ public class Environment
         double[] nextFrame = new double[inputsPerFrame]; // Create a float array to hold the next frame
 
         // Populate the next_Frame array with the respective values
-        nextFrame[0] = tf.position.x;
-        nextFrame[1] = tf.position.z;
+        nextFrame[0] = tf.position.z;
+        nextFrame[1] = tf.position.x;
         nextFrame[2] = distancesToObstacles[0];
         nextFrame[3] = distancesToObstacles[1];
         nextFrame[4] = distancesToObstacles[2];
@@ -174,6 +174,34 @@ public class Environment
             else
             {
                 distancesToObstacles[hitDir] = collisionDetectRange; // If no object is hit by raycast, then set distancesToObstacles to max
+            }
+        }
+    }
+    // AI Vision is limited to field of view and max view distance
+    private void AIVision(Vector3 vectorToTarget, Transform ttf)
+    {
+        // Find the distance between the two vectors in float to compare with maxViewDistance
+        targetDistance = Vector3.Distance(ttf.position, tf.position);
+
+        // Find the angle between the direction our agent is facing (forward in local space) and the vector to the target.
+        float angleToTarget = Vector3.Angle(vectorToTarget, tf.forward);
+
+        if (angleToTarget < RLManager.instance.settings.fieldOfView && targetDistance < RLManager.instance.settings.maxViewDistance)
+        {
+            int obstacleLayer = LayerMask.NameToLayer("Obstacle");             // Add Walls layer to variable
+            int objectiveLayer = LayerMask.NameToLayer("Objective");           // Add Player layer to variable
+            int layerMask = (1 << obstacleLayer) | (1 << objectiveLayer);      // Create layermask
+
+            RaycastHit hit;
+
+            // Raycast to detect objective within field of view with max view distance as a limit
+            if (Physics.Raycast(tf.position, vectorToTarget, out hit, RLManager.instance.settings.maxViewDistance, layerMask))
+            {
+                if (hit.collider.CompareTag("Objective"))
+                {
+                    // boolean to indicate objective is sighted (state input)
+                    // angleToTarget (state input)
+                }
             }
         }
     }

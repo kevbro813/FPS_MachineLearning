@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [Serializable]
@@ -39,29 +40,27 @@ public class NeuralNetwork
     }
     public double[] FeedForward(double[] inputs)
     {
-        layers[0].FeedForward(inputs, 0);
+        layers[0].FeedForward(inputs);
         for (int i = 1; i < layers.Length; i++)
-            layers[i].FeedForward(layers[i - 1].outputs, i);
+            layers[i].FeedForward(layers[i - 1].outputs);
 
         return layers[layers.Length - 1].outputs;
     }
-
     public void Backpropagation(double[] targets)
     {
         for (int i = layers.Length - 1; i >= 0; i--)
         {
             if (i == layers.Length - 1)
-                layers[i].BackpropOutput(targets, i);
+                layers[i].BackpropOutput(targets);
             else
-                layers[i].BackpropHidden(layers[i + 1].gamma, layers[i + 1].weights, i);
+                layers[i].BackpropHidden(layers[i + 1].gamma, layers[i + 1].weights);
         }
         UpdateWeightsAndBiases();
     }
-
     public void UpdateWeightsAndBiases()
     {
         for (int i = 0; i < layers.Length; i++)
-            layers[i].Optimize(RLManager.instance.rlComponent ? RLManager.instance.rlComponent : RLManager.instance.rlComponentTester);
+            layers[i].Optimize();
     }
 }
 
@@ -86,6 +85,7 @@ public class Layer
     private double beta1;
     private double beta2;
     private double epsilonHat;
+    private double currentLearningRate;
 
     public Settings.LayerActivations activation;
 
@@ -141,6 +141,7 @@ public class Layer
         secondMoment = new double[numberOfOutputs, numberOfInputs];
         firstMomentBias = new double[numberOfOutputs];
         secondMomentBias = new double[numberOfOutputs];
+        currentLearningRate = 0;
     }
 
     public void Init_Biases()
@@ -156,7 +157,7 @@ public class Layer
                 weights[i][j] = (double)UnityEngine.Random.Range(-0.5f, 0.5f); // Set a random weight
         }
     }
-    public double[] FeedForward(double[] inputs, int layer)
+    public double[] FeedForward(double[] inputs)
     {
         this.inputs = inputs;
 
@@ -178,15 +179,15 @@ public class Layer
         return outputs;
     }
 
-    public void Optimize(RLComponent rl)
+    public void Optimize()
     {
         t++; // This is reset to 0 each episode which will therefore reset the learning rate
-        rl.currentLearningRate = learningRate * Math.Sqrt(1 - Math.Pow(beta2, t)) / (1 - Math.Pow(beta1, t));
+        currentLearningRate = learningRate * Math.Sqrt(1 - Math.Pow(beta2, t)) / (1 - Math.Pow(beta1, t));
 
-        UpdateWeights(rl);
-        UpdateBiases(rl);
+        UpdateWeights();
+        UpdateBiases();
     }
-    private void UpdateWeights(RLComponent rl)
+    private void UpdateWeights()
     {
         for (int i = 0; i < outputQty; i++)
         {
@@ -196,12 +197,12 @@ public class Layer
 
                 firstMoment[i, j] = (beta1 * firstMoment[i, j]) + (1 - beta1) * gradient;
                 secondMoment[i, j] = (beta2 * secondMoment[i, j]) + (1 - beta2) * (gradient * gradient);
+                weights[i][j] += currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + epsilonHat);
 
-                weights[i][j] += rl.currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + epsilonHat);
             }
         }
     }
-    private void UpdateBiases(RLComponent rl)
+    private void UpdateBiases()
     {
         for (int i = 0; i < outputQty; i++)
         {
@@ -209,11 +210,10 @@ public class Layer
 
             firstMomentBias[i] = beta1 * firstMomentBias[i] + (1 - beta1) * biasGradient;
             secondMomentBias[i] = beta2 * secondMomentBias[i] + (1 - beta2) * (biasGradient * biasGradient);
-
-            biases[i] += rl.currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + epsilonHat);
+            biases[i] += currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + epsilonHat);
         }
     }
-    public void BackpropOutput(double[] targets, int lay)
+    public void BackpropOutput(double[] targets)
     {
         for (int i = 0; i < outputQty; i++)
             error[i] = targets[i] - outputs[i];
@@ -227,7 +227,7 @@ public class Layer
                 weightsDelta[i][j] = gamma[i] * inputs[j];
         }
     }
-    public void BackpropHidden(double[] gammaForward, double[][] weightsForward, int lay)
+    public void BackpropHidden(double[] gammaForward, double[][] weightsForward)
     {
         for (int i = 0; i < outputQty; i++)
         {

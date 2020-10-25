@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using UnityEngine;
 [Serializable]
 public class PPO
@@ -13,8 +14,9 @@ public class PPO
     private int actionQty;
     private float clipMinimum;
     private float clipMaximum;
-    private double entropyLoss = 0.0001d; // TODO: Add to settings
-    public double ppoLoss;
+    private double entropyBonus = 0.005d; // TODO: Add to settings
+    public double actorLoss;
+    public double criticLoss;
     private double gamma;
     private int batchSize;
 
@@ -22,14 +24,16 @@ public class PPO
     public double[] rewards;
     public int[][] actions;
     public double[][] predictions;
+    public double[] values;
     public bool[] dones;
     private double[] advantages;
-    private double[] probabilities;
-    private double[] oldProbabilities;
+    //private double[] probabilities;
+    //private double[] oldProbabilities;
     private double[] ratios;
     private double[] p1;
     private double[] p2;
     public double[] actorTargets;
+
 
     public int updateStep;
 
@@ -42,27 +46,94 @@ public class PPO
         actionQty = actQty;
         clipMinimum = 1 - ppoEpsilon;
         clipMaximum = 1 + ppoEpsilon;
-        ppoLoss = 0;
+        actorLoss = 0;
+        criticLoss = 0;
         gamma = RLManager.instance.settings.gamma;
-        batchSize = RLManager.instance.settings.epiMaxSteps; // PPO trains on each epoch of training data after every episode. Therefore, the batch size will be the episode length.
+
+        // PPO trains after every episode and uses the entire batch once. Therefore, the batch size will be the episode length - framesPerState + 1
+        // This is due to the experience buffer not starting until there are enough frames.
+        batchSize = RLManager.instance.settings.epiMaxSteps - RLManager.instance.settings.framesPerState + 1; 
 
         // Initialize arrays
         discountRewards = new double[batchSize];
         rewards = new double[batchSize];
         actions = new int[batchSize][];
         predictions = new double[batchSize][];
+        values = new double[batchSize];
         dones = new bool[batchSize];
         advantages = new double[batchSize];
 
-        probabilities = new double[actionQty];
-        oldProbabilities = new double[actionQty];
+        //probabilities = new double[actionQty];
+        //oldProbabilities = new double[actionQty];
         ratios = new double[actionQty];
         p1 = new double[actionQty];
         p2 = new double[actionQty];
         actorTargets = new double[actionQty];
     }
+    public double PPOReplay()
+    {
+        UnpackBatch(); // Unpack Tuple with batch data
 
-    private void ActorTargets(double[] state, int batchIndex)
+        // Compute Discounted Rewards 
+        DiscountRewards(); // TODO: Check
+
+        // Compute Advantages
+        Advantages(); // TODO: Check
+
+        // Train Agent
+        Train(); // TODO: Check
+
+        return criticLoss / batchSize;
+    }
+    private void Train()
+    {
+        int batchIndex = 0;
+        for (int i = env.framesPerState - 1; i < env.frameBufferSize; i++)
+        {
+            double[] state = env.GetState(i);
+            ClippedSurrogateObjective(state, batchIndex);
+            UpdateActor(state, actorTargets);
+            UpdateCritic(state, discountRewards[batchIndex]);
+            batchIndex++;
+        }
+    }
+    private void DiscountRewards()
+    {
+        double lambda = 0.95d; // Lambda
+        double d = 1; // Done flag (1 if not done, 0 if done)
+        double lastGAE = 0;
+        double delta;
+        for (int i = batchSize - 1; i >= 0; i--)
+        {
+            if (dones[i])
+            {
+                d = 0;
+                delta = rewards[i] - values[i];
+            }
+            else
+            {
+                delta = rewards[i] + gamma * values[i + 1] - values[i];
+            }
+            
+            lastGAE = delta + gamma * lambda * d * lastGAE;
+
+            discountRewards[i] = lastGAE + values[i];
+        }
+
+        discountRewards = Normalize(discountRewards);
+    }
+
+    private void Advantages()
+    {
+        for (int i = 0; i < advantages.Length; i++)
+        {
+            advantages[i] = discountRewards[i] - values[i];
+        }
+
+        //advantages = Normalize(advantages);
+        //Debug.Log(advantages[advantages.Length - 1]);
+    }
+    private void ClippedSurrogateObjective(double[] state, int batchIndex)
     {
         // Use actor network to calculate y Prediction
         double[] yPred = actorNet.FeedForward(state);
@@ -70,117 +141,84 @@ public class PPO
         // Use critic network to calculate stateValue
         double stateValue = criticNet.FeedForward(state)[0];
 
-        // Calculate probabilities
-        for (int i = 0; i < actionQty; i++)
-        {
-            probabilities[i] = yPred[i] * actions[batchIndex][i]; // prob = actions * prediction_picks
-            oldProbabilities[i] = actions[batchIndex][i] * predictions[batchIndex][i]; // old_prob = actions * prediction_picks
-        }
-
         // Calculate ratios
         for (int i = 0; i < actionQty; i++)
         {
-            ratios[i] = probabilities[i] / (oldProbabilities[i] + 1e-10); // ratios = probabilities / (old_probabilities + 1e-10)
+            ratios[i] = Math.Exp(predictions[batchIndex][i] - yPred[i]);
         }
-
-        // Compute Advantages
-        advantages[batchIndex] = discountRewards[batchIndex] - stateValue; // advantages = discountedRewards - value;
+        //Debug.Log(actions[batchIndex][0] + "    " + actions[batchIndex][1] + "    " + actions[batchIndex][2] + "    " + actions[batchIndex][3] + "    " + actions[batchIndex][4]);
 
         for (int i = 0; i < actionQty; i++)
         {
-            p1[i] = ratios[i] * advantages[batchIndex]; // p1 = ratios * advantages
-            p2[i] = ClampRatio(ratios[i]) * advantages[batchIndex]; // p2 = clippedRatio * advantages
+            p1[i] = -advantages[batchIndex] * ratios[i]; // p1 = ratios * advantages
+            p2[i] = -advantages[batchIndex] * Clip(ratios[i]); // p2 = clippedRatio * advantages
         }
         
         double total = 0;
 
-        // loss = -mean(minimum(p1, p2) + entropyLoss * -(prob * K.log(prob + 1e-10)))
-        for (int i = 0; i < actionQty; i++)
+        for (int i = 0; i < actionQty; i++) // loss = -mean(minimum(p1, p2) + entropyLoss * -(prob * K.log(prob + 1e-10)))
         {
-            actorTargets[i] = -Math.Min(p1[i], p2[i]) + entropyLoss * -(probabilities[i] * Math.Log(probabilities[i] + 1e-10));
+            actorTargets[i] = Math.Max(p1[i], p2[i]); //+ entropyBonus; //* -(probabilities[i] * Math.Log(probabilities[i] + 1e-10)); // TODO: Check
             total += actorTargets[i];
         }
+        //Debug.Log(actorTargets[0] + "    " + actorTargets[1] + "    " + actorTargets[2] + "    " + actorTargets[3] + "    " + actorTargets[4]);
 
-        ppoLoss = total / actionQty;
+        actorLoss = total / actionQty;
+
+        CriticLoss(discountRewards[batchIndex], values[batchIndex]);
     }
-    public double PPOReplay()
+    // MSE Cost
+    private double CriticLoss(double target, double stateValue)
     {
-        UnpackBatch(agent.ppoExperienceBuffer); // Unpack Tuple with batch data
+        double error = stateValue - target;
+        double loss = 0.5d * (error * error);
 
-        // Compute Discounted Rewards 
-        DiscountRewards();
+        criticLoss += loss;
 
-        for (int i = env.framesPerState - 1; i < batchSize; i++)
-        {
-            double[] state = env.GetState(i);
-            ActorTargets(state, i); // TODO: Check
-            UpdateActor(state, actorTargets); // TODO: Check
-            UpdateCritic(state, discountRewards[i]); // TODO: Check
-        }
-        return ppoLoss;
+        return criticLoss;
     }
-    public void DiscountRewards()
+    private double Clip(double ratio)
     {
-        double discount = 0;
-        discountRewards = new double[batchSize];
-        for (int i = rewards.Length - 1; i >= 0; i--)
-        {
-            if (dones[i])
-            {
-                discount = 0;
-            }
-
-            discount = discount * gamma + rewards[i];
-            discountRewards[i] = discount;
-        }
-
-        NormalizeDiscountRewards();
+        if (ratio >= clipMaximum)
+            return clipMaximum;
+        else if (ratio <= clipMinimum)
+            return clipMinimum;
+        else
+            return ratio;
     }
-    private void NormalizeDiscountRewards()
+
+    private double[] Normalize(double[] data)
     {
-        double avgDiscountReward = AverageDiscountRewards();
+        double meanDiscountReward = RLManager.math.Mean(data);
         double totalSquaredDifference = 0;
-        for (int i = 0; i < discountRewards.Length; i++)
+
+        for (int i = 0; i < data.Length; i++)
         {
-            discountRewards[i] -= avgDiscountReward;
-            totalSquaredDifference += RLManager.math.SquaredDifference(discountRewards[i], avgDiscountReward);
+            totalSquaredDifference += RLManager.math.SquaredDifference(data[i], meanDiscountReward);
+            data[i] -= meanDiscountReward;
         }
 
-        double variance = RLManager.math.Variance(totalSquaredDifference, discountRewards.Length);
+        double variance = RLManager.math.Variance(totalSquaredDifference, data.Length);
         double stdDeviation = RLManager.math.StdDeviation(variance);
 
-        for (int i = 0; i < discountRewards.Length; i++)
+        for (int i = 0; i < data.Length; i++)
         {
-            discountRewards[i] /= stdDeviation;
-        }
-    }
-    private double AverageDiscountRewards()
-    {
-        double total = 0;
-        for (int i = 0; i < discountRewards.Length; i++)
-        {
-            total += discountRewards[i];
+            data[i] /= (stdDeviation + 1e-10);
         }
 
-        return total / discountRewards.Length;
+        return data;
     }
-    // Clamp Ratios
-    private double ClampRatio(double ratio)
-    {
-        double value = (double)Mathf.Clamp((float)ratio, clipMinimum, clipMaximum);
-
-        return value;
-    }
-    private void UnpackBatch(Tuple<int, double, double[], bool>[] batch)
+    private void UnpackBatch()
     {
         for (int i = 0; i < batchSize; i++)
         {
             int[] actionOneHot = new int[actionQty];
-            actionOneHot[batch[i].Item1] = 1;
+            actionOneHot[agent.ppoExperienceBuffer[i].Item1] = 1;
             actions[i] = actionOneHot;
-            rewards[i] = batch[i].Item2;
-            predictions[i] = batch[i].Item3;
-            dones[i] = batch[i].Item4;
+            rewards[i] = agent.ppoExperienceBuffer[i].Item2;
+            predictions[i] = agent.ppoExperienceBuffer[i].Item3;
+            values[i] = agent.ppoExperienceBuffer[i].Item4;
+            dones[i] = agent.ppoExperienceBuffer[i].Item5;
         }
     }
     // Train Critic Net

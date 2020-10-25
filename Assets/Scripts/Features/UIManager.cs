@@ -202,7 +202,8 @@ public class UIManager : MonoBehaviour
     }
     public void UpdateEpisodeAverage(double totalReward, int episodeNumber)
     {
-        episodeAverage.text = (totalReward / episodeNumber).ToString();
+        // Episode number - 1 is required since episode advances before average is calculated
+        episodeAverage.text = (totalReward / (episodeNumber - 1)).ToString();
     }
     public void ResumeGame()
     {

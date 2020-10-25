@@ -24,25 +24,6 @@ public class MathFunctions
     {
         return Math.Tanh(value);
     }
-
-    // Activation Function Derivatives
-    public double ReluDerivative(double value)
-    {
-        return 0 >= value ? 0 : 1;
-    }
-    public double LeakyReluDerivative(double value)
-    {
-        return 0 >= value ? 0.01d : 1;
-    }
-    public double SigmoidDerivative(double value)
-    {
-        return value * (1 - value);
-    }
-
-    public double TanhDerivative(double value)
-    {
-        return 1 - (value * value);
-    }
     // Softmax action outputs
     public double[] Softmax(double[] actions)
     {
@@ -64,6 +45,30 @@ public class MathFunctions
 
         return softAction;
     }
+    // Activation Function Derivatives
+    public double ReluDerivative(double value)
+    {
+        return 0 >= value ? 0 : 1;
+    }
+    public double LeakyReluDerivative(double value)
+    {
+        return 0 >= value ? 0.01d : 1;
+    }
+    public double SigmoidDerivative(double value)
+    {
+        return value * (1 - value);
+    }
+
+    public double TanhDerivative(double value)
+    {
+        return 1 - (value * value);
+    }
+    // Softmax Derivative
+    public double SoftmaxDerivative(double value)
+    {
+        return value * (1 - value);
+    }
+
     // Returns index of max action value
     public int ArgMax(double[] action)
     {
@@ -90,23 +95,16 @@ public class MathFunctions
         }
         return maxAct;
     }
-    // Softmax Derivative
-    public double SoftmaxDerivative(double value)
+    public double Mean(double[] values)
     {
-        return value * (1 - value);
-    }
-    public double AverageCost(RLComponent rl, double[] costs)
-    {
-        double avgCost; // Average loss for each action
-        double totLoss = 0; // Variable to hold total loss, used to average
+        double total = 0; // Variable to hold total loss, used to average
 
         // Calculate average the losses for each action
-        for (int i = 0; i < rl.actionQty; i++)
+        for (int i = 0; i < values.Length; i++)
         {
-            totLoss += costs[i]; // Sum costs of 
+            total += values[i]; // Sum costs of 
         }
-        avgCost = totLoss / rl.actionQty; // Calculate average loss
-        return avgCost;
+        return total / values.Length; // Return average
     }
     // Returns the strongest action, the rest will be set to 0. Used for selected_Actions and QValues
     public double[] Amax(double[] action)
@@ -233,9 +231,9 @@ public class MathFunctions
         return mean;
     }
     // Find the squared difference, used to calculate variance
-    public double SquaredDifference(double dp, double mean)
+    public double SquaredDifference(double dataPoint, double mean)
     {
-        double diff = dp - mean;
+        double diff = dataPoint - mean;
         double sqrdDiff = diff * diff;
         return sqrdDiff;
     }

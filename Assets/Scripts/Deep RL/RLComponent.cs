@@ -52,7 +52,6 @@ public class RLComponent : MonoBehaviour
     public int layerQty; // Number of layers
     public int inputsPerFrame; // The number of inputs that comprise each frame
     public int inputsPerState; // Number of frames in a state
-    public double currentLearningRate;
     public float epsilonDecay; // This is the rate at which the value of epsilon will reduce each update
     public double cost;
     [Space(10)] 
@@ -147,7 +146,7 @@ public class RLComponent : MonoBehaviour
     private void Init_PPO_Nets()
     {
         actorLayers = new int[] { 30, 60, 40, 30, 5 };
-        criticLayers = new int[] { 30, 30, 30, 1 }; // output must be one
+        criticLayers = new int[] { 30, 60, 40, 30, 1 }; // output must be one
         actionQty = actorLayers[actorLayers.Length - 1];
         layerQty = actorLayers.Length;
         inputsPerState = actorLayers[0];
@@ -192,7 +191,7 @@ public class RLComponent : MonoBehaviour
         if (algo == Settings.Algorithm.Proximal_Policy_Optimization)
         {
             RLManager.instance.settings.frameBufferSize = episodeMaxSteps; // Frame buffer should be the same size as the number of steps in the episode
-            RLManager.instance.settings.expBufferSize = episodeMaxSteps; // ^Also, experience buffer
+            RLManager.instance.settings.expBufferSize = episodeMaxSteps - framesPerState + 1; // Experience buffer does not start until there are enough frames, thus subtracting framesPerState and adding 1
         }
     }
     /// <summary>
@@ -251,7 +250,11 @@ public class RLComponent : MonoBehaviour
         else if (isDone && algo == Settings.Algorithm.Proximal_Policy_Optimization)
         {
             cost = ppo.PPOReplay();
-            NewEpisodeCheck();
+            isDone = false;
+        }
+        else if (isDone && algo == Settings.Algorithm.Double_DQN)
+        {
+            isDone = false;
         }
     }
 
@@ -279,7 +282,7 @@ public class RLComponent : MonoBehaviour
 
         Epsilon(); // Epsilon update calculation
 
-        NewEpisodeCheck();
+        NewEpisodeCheck(); // Check if episode is finished
     }
 
     private void RunPPO()
@@ -293,12 +296,14 @@ public class RLComponent : MonoBehaviour
         // Get action probabilities from actor net
         double[] actionProbs = actorNet.FeedForward(state);
 
+        double value = criticNet.FeedForward(state)[0];
+        
         int currentAction = agent.PPOAction(actionProbs); // Perform action and return one hot array
 
         double reward = Reward(); // Store reward
 
-        // Store action, reward, predictions and dones as tuples
-        PPOExperience(currentAction, reward, actionProbs, isDone);
+        // Store action, reward, predictions (actionProbs) and dones as tuples
+        PPOExperience(currentAction, reward, actionProbs, value, isDone);
 
         // Advance frame
         double[] nextFrame = env.GetNextFrame(); // Creates next frame
@@ -306,11 +311,11 @@ public class RLComponent : MonoBehaviour
         env.AppendFrame(nextFrame); // Add frame to frame buffer
 
         env.UpdateFrameBufferCounters(); // Updates fbIndex and fbCount variables
+
+        NewEpisodeCheck(); // Check if episode is finished
     }
     private void PPOStep()
     {
-        DoneCheck(); // Check if the episode is over and start a new one
-
         epochs++; // Increment total steps
         epiSteps++; // Increment steps in episode
 
@@ -319,12 +324,11 @@ public class RLComponent : MonoBehaviour
         {
             GameManager.instance.ui.UpdateHUD();
         }
+        DoneCheck();
     }
 
     private void DDQNStep()
     {
-        DoneCheck(); // Check if the episode is over and start a new one
-
         epochs++; // Increment total steps
         epiSteps++; // Increment steps in episode
 
@@ -337,6 +341,7 @@ public class RLComponent : MonoBehaviour
         {
             GameManager.instance.ui.UpdateHUD();
         }
+        DoneCheck();
     }
     private void Epsilon()
     {
@@ -372,7 +377,7 @@ public class RLComponent : MonoBehaviour
                 isStateReady = true;
             }
         }
-        else
+        if (isStateReady)
         {
             // Update experience replay memory
             agent.ExperienceReplay(index, action, reward, done);
@@ -380,16 +385,30 @@ public class RLComponent : MonoBehaviour
         }
     }
 
-    private void PPOExperience(int action, double reward, double[] prediction, bool done)
+    private void PPOExperience(int action, double reward, double[] prediction, double value, bool done)
     {
-        // Update experience replay memory
-        agent.PPOExperience(action, reward, prediction, done);
-        agent.UpdateExperienceBufferCounters(); // Update bufferIndex and bufferCount variables
+        if (!isStateReady)
+        {
+            framesFirstState++;
+            if (framesFirstState >= framesPerState)
+            {
+                isStateReady = true;
+            }
+        }
+        if (isStateReady)
+        {
+            // Update experience replay memory
+            agent.PPOExperience(action, reward, prediction, value, done);
+            agent.UpdateExperienceBufferCounters(); // Update bufferIndex and bufferCount variables
+        }
     }
+
     private void DoneCheck()
     {
         if (epiSteps >= episodeMaxSteps)
+        {
             isDone = true;
+        }
     }
     /// <summary>
     /// Check if the episode has elapsed and begin new episode if true.
@@ -399,7 +418,6 @@ public class RLComponent : MonoBehaviour
         if (epiSteps >= episodeMaxSteps)
         {
             episodeNum++;
-            isDone = false;
             isSaved = false;
             epiSteps = 0;
             isStateReady = false;
@@ -409,9 +427,16 @@ public class RLComponent : MonoBehaviour
             tf.position = RLManager.instance.spawnpoint.position;
             GameManager.instance.ui.UpdateEpisodeAverage(totalReward, episodeNum);
 
+            if (algo == Settings.Algorithm.Proximal_Policy_Optimization)
+            {
+                // Clears out memory by saving new data over old
+                agent.bufferIndex = 0;
+                env.fbIndex = 0;
+            }
+
             //foreach (Layer lay in mainNet.layers)
             //{
-                //lay.t = 0; // Resetting t to zero will reset the learning rate each episode
+            //lay.t = 0; // Resetting t to zero will reset the learning rate each episode
             //}
         }
     }

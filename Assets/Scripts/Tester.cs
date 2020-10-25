@@ -18,7 +18,7 @@ public class Tester : MonoBehaviour
         // 1 1 0    => 0
         // 1 1 1    => 1
 
-        NeuralNetwork net = new NeuralNetwork(new int[] { 3, 25, 25, 1 });
+        NeuralNetwork net = new NeuralNetwork(new int[] { 3, 25, 25, 25, 1 });
 
         for (int i = 0; i < 20000; i++)
         {

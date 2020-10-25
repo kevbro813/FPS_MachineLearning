@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System;
 using UnityEditor;
-using System.Security.Cryptography;
 
 [Serializable]
 public class Agent
@@ -9,7 +8,7 @@ public class Agent
     private AIPawn aiPawn;
     private RLComponent rlComponent;
     public Tuple<int, int, double, bool>[] experienceBuffer; // Tuple that holds the Index of the last frame(used to calculate states), action, reward and done flag 
-    public Tuple<int, double, double[], bool>[] ppoExperienceBuffer;
+    public Tuple<int, double, double[], double, bool>[] ppoExperienceBuffer;
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
     public bool isExploit = true;
@@ -29,7 +28,7 @@ public class Agent
         UnityEngine.Random.InitState(seed);
         expBufferSize = RLManager.instance.settings.expBufferSize;
         experienceBuffer = new Tuple<int, int, double, bool>[expBufferSize];
-        ppoExperienceBuffer = new Tuple<int, double, double[], bool>[expBufferSize];
+        ppoExperienceBuffer = new Tuple<int, double, double[], double, bool>[expBufferSize];
         bufferIndex = 0;
         bufferCount = 0;
         actionQty = actQty;
@@ -138,10 +137,15 @@ public class Agent
         experienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
     }
     // Buffer that stores (s, a, r, s') tuples 
-    public void PPOExperience(int action, double reward, double[] prediction, bool done) // The state and next state are stored as one float array called frameBuffer.
+    public void PPOExperience(int actions, double rewards, double[] predictions, double values, bool dones) // The state and next state are stored as one float array called frameBuffer.
     {
-        Tuple<int, double, double[], bool> nTuple = new Tuple<int, double, double[],  bool>(action, reward, prediction, done); // Create a new tuple with the data passed in
-
+        double[] preds = new double[actionQty];
+        for (int i = 0; i < actionQty; i++)
+        {
+            preds[i] = predictions[i];
+        }
+        Tuple<int, double, double[], double, bool> nTuple = new Tuple<int, double, double[], double, bool>(actions, rewards, preds, values, dones); // Create a new tuple with the data passed in
+        
         ppoExperienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
     }
     public void UpdateExperienceBufferCounters()
@@ -170,5 +174,11 @@ public class Agent
             miniBatch[i] = experienceBuffer[rand]; // Add the random memory to the mini-batch
         }
         return miniBatch; // Return the completed mini-batch
+    }
+
+    public Tuple<int, double, double[], double, bool>[] GetPPOBatch()
+    {
+        Debug.Log(ppoExperienceBuffer[0].Item3[0]);
+        return ppoExperienceBuffer;
     }
 }
