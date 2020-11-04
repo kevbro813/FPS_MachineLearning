@@ -17,7 +17,7 @@ MonoBehaviour:
   episodeMax: 10000
   framesPerState: 3
   frameBufferSize: 120000
-  epiMaxSteps: 1000
+  epiMaxSteps: 5000
   epsilon: 1
   epsilonMin: 0.1
   epsDecayRate: 100000
@@ -25,9 +25,9 @@ MonoBehaviour:
   miniBatchSize: 50
   netCopyRate: 5000
   gamma: 0.99
-  learningRate: 0.0001
-  actorLearningRate: 0.00001
-  criticLearningRate: 0.0001
+  dqnLearningRate: 0.0001
+  actorLearningRate: 0.000001
+  criticLearningRate: 0.000001
   beta1: 0.9
   beta2: 0.999
   epsilonHat: 0.000000001
@@ -36,7 +36,16 @@ MonoBehaviour:
   fieldOfView: 45
   collisionDetectRange: 50
   autoSaveEpisode: 10
+  ppoClip: 0.2
+  entropyBonus: 0.0000005
+  tau: 0.95
+  trainingEpochs: 4
+  asyncAgents: 1
+  saveLocation: E:\\ML_Specimen
+  dqnNetStructure: 1e0000003c000000280000001e00000005000000
+  actorNetStructure: 1e0000003c000000280000001e00000005000000
+  criticNetStructure: 1e0000003c000000280000001e00000001000000
   algo: 1
-  activations: 01000000010000000100000001000000
-  criticActivations: 03000000030000000300000005000000
+  dqnActivations: 01000000010000000100000001000000
+  criticActivations: 01000000010000000100000005000000
   actorActivations: 03000000030000000300000004000000

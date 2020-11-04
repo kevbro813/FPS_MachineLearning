@@ -217,3 +217,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8e7db0334b1ebf4ca81018f99129225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainNet:
+    layers: []
+  targetNet:
+    layers: []
+  actorNet:
+    layers: []
+  criticNet:
+    layers: []
+  layers: 
+  actorLayers: 
+  criticLayers: 
+  ppo:
+    actorLoss: 0
+    criticLoss: 0
+    rewards: []
+    values: []
+    dones: 
+    actorTargets: []
+    updateSteps: 10
+  env:
+    distancesToObstacles: []
+    targetDistance: 0
+    rotation: 0
+    fbIndex: 0
+    fbCount: 0
+    isOnObjective: 0
+    frameBufferSize: 0
+    framesPerState: 0
+  agent:
+    bufferIndex: 0
+    bufferCount: 0
+    isExploit: 0
+    actionQty: 0
+  epochs: 0
+  epiSteps: 0
+  episodeNum: 0
+  framesFirstState: 0
+  episodeReward: 0
+  totalReward: 0
+  isDone: 0
+  isTraining: 0
+  isNetworkNew: 0
+  isStateReady: 0
+  isAgentActive: 0
+  actionQty: 0
+  layerQty: 0
+  inputsPerFrame: 0
+  inputsPerState: 0
+  epsilonDecay: 0
+  cost: 0
+  epsilon: 0
+  epsilonMin: 0
+  epsDecayRate: 0
+  framesPerState: 0
+  netCopyRate: 0
+  episodeMaxSteps: 0
+  episodeMax: 0
+  autoSaveEpisode: 0
+  agentName: 
+  algo: 0

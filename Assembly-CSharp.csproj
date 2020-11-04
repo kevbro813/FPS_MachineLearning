@@ -76,6 +76,7 @@
     <Compile Include="Assets\Scripts\Features\SaveLoad.cs" />
     <Compile Include="Assets\Scripts\Features\UIManager.cs" />
     <Compile Include="Assets\Scripts\Game\AIPawn.cs" />
+    <Compile Include="Assets\Scripts\Game\Checkpoint.cs" />
     <Compile Include="Assets\Scripts\Game\GameManager.cs" />
     <Compile Include="Assets\Scripts\Game\Objective.cs" />
     <Compile Include="Assets\Scripts\Observer\ObserverController.cs" />

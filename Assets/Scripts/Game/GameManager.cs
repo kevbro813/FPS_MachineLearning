@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Main FSM
         if (gameState == "pregame")
         {
             DoPregame();
@@ -78,6 +79,7 @@ public class GameManager : MonoBehaviour
             DoQuit();
         }
     }
+    // Pregame state
     public void DoPregame()
     {
         // Disable all AI movement
@@ -86,6 +88,7 @@ public class GameManager : MonoBehaviour
         adminMenu.SetActive(true);
         isPaused = false;
     }
+    // Active state (training/game running)
     public void DoActive()
     {
         RLManager.instance.isAgentInitialized = true;
@@ -93,6 +96,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1;
         adminMenu.SetActive(false);
     }
+    // Admin menu state
     public void DoAdmin()
     {
         // Disable all AI movement
@@ -101,6 +105,7 @@ public class GameManager : MonoBehaviour
         RLManager.instance.isSessionPaused = true;
         adminMenu.SetActive(true);
     }
+    // State used to transition back to active game
     public void DoContinue()
     {
         Time.timeScale = 1;
@@ -109,10 +114,12 @@ public class GameManager : MonoBehaviour
         RLManager.instance.isSessionPaused = false;
         adminMenu.SetActive(false);
     }
+    // Quit game
     public void DoQuit()
     {
         Application.Quit();
     }
+    // State when training ession is over
     public void DoEndGame()
     {
         Time.timeScale = 0;
@@ -120,6 +127,7 @@ public class GameManager : MonoBehaviour
         isPaused = false;
         adminMenu.SetActive(false);
     }
+    // Pause game state
     public void DoPause()
     {
         // Disable all AI movement

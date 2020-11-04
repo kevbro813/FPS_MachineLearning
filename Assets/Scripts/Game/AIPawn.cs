@@ -5,8 +5,8 @@ using UnityEngine;
 public class AIPawn : MonoBehaviour
 {
     private Transform tf;
-    public float moveSpeed = 10f;
-    public float rotationSpeed = 10f;
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float rotationSpeed = 10f;
     private void Awake()
     {
         tf = GetComponent<Transform>(); 

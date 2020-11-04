@@ -6,24 +6,28 @@ public class Environment
 {
     private RLComponent rlComponent;
     private Transform tf;
-
-    public double[][] frameBuffer; // An array to hold the frame buffer
-
     private RaycastHit[] hit;
     private Vector3[] directions;
+    public double[][] frameBuffer; // An array to hold the frame buffer
     public double[] distancesToObstacles;  
     public double targetDistance;
     public double rotation;
-    public int fbIndex;
-    public int fbCount;
-    public bool isOnObjective = false;
-    public int frameBufferSize;
-    public int framesPerState;
-    private int inputsPerFrame;
-    private int inputsPerState;
-    private float collisionDetectRange;
+    public int fbIndex; // Frame buffer index used to fill the fb
+    public int fbCount; // Frame buffer count used to track the size of the fb
+    public bool isOnObjective = false; // If true, the agent will be rewarded as long as they are on the objective
+    public bool isAtCheckpoint = false; // If true, agent will be rewarded one time
+    public int frameBufferSize; // Size of the frame buffer, AKA maximum number of frames that can be stored at any time
+    public int framesPerState; // Number of frames in a state
+    private int inputsPerFrame;  // Number of inputs per frame
+    private int inputsPerState; // AKA total number of inputs
+    private float collisionDetectRange; // Range that the collision detection raycasts will extend
+    public float currentCheckpointReward;
 
-    // Initialize a new environment
+    /// <summary>
+    /// Initialize a new environment.
+    /// </summary>
+    /// <param name="agent"></param>
+    /// <param name="rl"></param>
     public void Init_Env(Transform agent, RLComponent rl)
     {
         tf = agent;
@@ -38,7 +42,39 @@ public class Environment
         collisionDetectRange = RLManager.instance.settings.collisionDetectRange;
         frameBuffer = new double[frameBufferSize][];
     }
-    // Get the next_Frame array data from raycasts, colliders, etc.
+    /// <summary>
+    /// Calculates the reward. This can be changed to reinforce behaviors.
+    /// </summary>
+    /// <returns></returns>
+    public double CalculateReward()
+    {
+        double reward = 0;
+
+        if (isOnObjective)
+        {
+            reward++;
+        }
+        else
+        {
+            reward--;
+        }
+        for (int i = 0; i < distancesToObstacles.Length; i++)
+        {
+            if (distancesToObstacles[i] < 1)
+            {
+                //reward -= (2 - distancesToObstacles[i]); // TODO: FIX THIS... Bool to indicate if a raycast hits a wall. If it is false and distanceToObstacles is 0, then it should set distanceToObstacles to max number to avoid confusion with points.
+                reward--;
+            }
+        }
+        reward += currentCheckpointReward;
+
+        return reward;
+    }
+    /// <summary>
+    /// Get the next frame which is one epochs worth of data, can be raycasts, Vector3 positions, health, etc.
+    /// This method needs to be changed to collect the right inputs for the game.
+    /// </summary>
+    /// <returns></returns>
     public double[] GetNextFrame()
     {
         CollisionDetection(); // CollisionDetection function will collect the distance to objects from the raycasts pointed in the 8 compass directions
@@ -56,25 +92,35 @@ public class Environment
         nextFrame[7] = distancesToObstacles[5];
         nextFrame[8] = distancesToObstacles[6];
         nextFrame[9] = distancesToObstacles[7];
-        //next_Frame[10] = tf.transform.eulerAngles.y;
+        //nextFrame[10] = tf.transform.eulerAngles.y;
 
-        return nextFrame; // Return next_Frame
+        return nextFrame; // Return nextFrame
     }
-    // Update the frame buffer by removing the oldest frame and appending the next frame
+    /// <summary>
+    /// Update the frame buffer by removing the oldest frame and appending the next frame
+    /// </summary>
+    /// <param name="nextFrame"></param>
+    /// <returns></returns>
     public int AppendFrame(double[] nextFrame) // Pass in the next frame
     {
         frameBuffer[fbIndex] = nextFrame; // Add the next frame to the frameBuffer
 
         return fbIndex; // Return the frameBuffer Index. This will be added to a tuple and the state/next state can be determined using this int
     }
-
+    /// <summary>
+    /// Update the fbCount and fbIndex variables to track the frameBuffer.
+    /// </summary>
     public void UpdateFrameBufferCounters()
     {
         fbCount = Mathf.Max(fbCount, fbIndex + 1);
 
         fbIndex = (fbIndex + 1) % frameBufferSize;
     }
-    // Get the state from frame buffer by taking the oldest frames
+    /// <summary>
+    /// Get the state from frame buffer by taking the oldest frames
+    /// </summary>
+    /// <param name="frameIndex"></param>
+    /// <returns></returns>
     public double[] GetState(int frameIndex)
     {
         int fps = framesPerState;
@@ -95,11 +141,11 @@ public class Environment
                 {
                     fi = frameIndex - i; // Use the frameIndex if not negative
                 }
-                state[fps - 1 - i] = frameBuffer[fi];
+                state[fps - 1 - i] = frameBuffer[fi]; // Set the state to the frame at index "fi"
             }
 
             int indx = 0;
-
+            // Flatten the state into a 1D array
             for (int j = 0; j < fps; j++)
             {
                 if (state[j] != null)
@@ -107,39 +153,17 @@ public class Environment
                     for (int k = 0; k < inputsPerFrame; k++)
                     {
                         flatState[indx] = state[j][k];
-                        indx++;
+                        indx++; // Increment the flatState index
                     }
                 }
             }    
         }
-
         return flatState; // Return the current state
     }
-    // TODO: Calculate the reward
-    public double CalculateReward()
-    {
-        double reward = 0;
- 
-        if (isOnObjective)
-        {
-            reward++;
-        }
-        else
-        {
-            reward--;
-        }
-        for (int i = 0; i < distancesToObstacles.Length; i++)
-        {
-            if (distancesToObstacles[i] < 1)
-            {
-                //reward -= (2 - distancesToObstacles[i]); // TODO: FIX THIS... Bool to indicate if a raycast hits a wall. If it is false and distanceToObstacles is 0, then it should set distanceToObstacles to max number to avoid confusion with points.
-                reward--;
-            }
-        }
-        return reward;
-    }
 
-    // Collision Detection Algorithm (Experimental)
+    /// <summary>
+    /// Collision Detection Algorithm
+    /// </summary>
     private void CollisionDetection()
     {   
         hit = new RaycastHit[8];
@@ -177,7 +201,11 @@ public class Environment
             }
         }
     }
-    // AI Vision is limited to field of view and max view distance
+    /// <summary>
+    /// AI Vision is limited to field of view and max view distance
+    /// </summary>
+    /// <param name="vectorToTarget"></param>
+    /// <param name="ttf"></param>
     private void AIVision(Vector3 vectorToTarget, Transform ttf)
     {
         // Find the distance between the two vectors in float to compare with maxViewDistance

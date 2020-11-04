@@ -5,24 +5,24 @@ using UnityEngine;
 public class RLManager : MonoBehaviour
 {
     public static RLManager instance;
-    public static MathFunctions math;
-    public GameObject agentPrefab;
-    public List<GameObject> agentObjectsList;
-    public RLComponent rlComponent;
-    public RLComponent rlComponentTester;
-    public Transform spawnpoint; // Add in inspector
-    public Transform agentShell;
-    public DefaultSettings defaultSettings;
-    public Settings settings;
-    public Settings loadSettings;
-    public bool isAgentInitialized;
-    public float costUpdateInEpochs;
-    public float spawnMin_X;
-    public float spawnMax_X;
-    public float spawnMin_Z;
-    public float spawnMax_Z;
-    public bool isSessionPaused;
-
+    public static MathFunctions math; // Math functions needed for algorithms
+    public GameObject agentPrefab; // Prefab of the agent to spawn
+    public List<GameObject> agentObjectsList; // List of agents TODO: Will be used with async agent update
+    public RLComponent rlComponent; // The active reinforcement learning component TODO: Will need to update for async agents
+    public RLComponent rlComponentTester; // Used to test the neural network
+    public Transform spawnpoint;  
+    public Transform agentShell; // Empty shell to organize inspector
+    public DefaultSettings defaultSettings; // Store default settings, these will be loaded at startup
+    public Settings settings; // Current settings
+    public Settings loadSettings; // Used to store settings that are to be loaded
+    public bool isAgentInitialized; // Used to activate/deactivate menu buttons (save/resume)
+    public float costUpdateInEpochs; // Update the cost display every "X" epochs
+    public float spawnMin_X; // Min X bound
+    public float spawnMax_X; // Max X bound
+    public float spawnMin_Z; // Min Z bound
+    public float spawnMax_Z; // Max Z bound
+    public bool isSessionPaused; // Used to fully pause the session
+   
     private void Awake()
     {
         // Singleton pattern
@@ -40,9 +40,13 @@ public class RLManager : MonoBehaviour
     }
     private void Start()
     {
-        rlComponentTester.Init_New_DDQN_Session(true, true, Settings.Algorithm.Double_DQN);
-        isAgentInitialized = false;
+        // Initialize the test 
+        rlComponentTester.Init_New_DDQN_Session(true, true, settings.dqnNetStructure);
+        isAgentInitialized = false; // Set to false to deactivate save and resume buttons at launch
     }
+    /// <summary>
+    /// Load default settings.
+    /// </summary>
     private void LoadDefaultSettings()
     {
         settings.agentName = defaultSettings.agentName;
@@ -58,7 +62,7 @@ public class RLManager : MonoBehaviour
         settings.miniBatchSize = defaultSettings.miniBatchSize;
         settings.netCopyRate = defaultSettings.netCopyRate;
         settings.gamma = defaultSettings.gamma;
-        settings.learningRate = defaultSettings.learningRate;
+        settings.dqnLearningRate = defaultSettings.dqnLearningRate;
         settings.actorLearningRate = defaultSettings.actorLearningRate;
         settings.criticLearningRate = defaultSettings.criticLearningRate;
         settings.beta1 = defaultSettings.beta1;
@@ -69,12 +73,23 @@ public class RLManager : MonoBehaviour
         settings.fieldOfView = defaultSettings.fieldOfView;
         settings.collisionDetectRange = defaultSettings.collisionDetectRange;
         settings.autoSaveEpisode = defaultSettings.autoSaveEpisode;
-        settings.activations = defaultSettings.activations;
+        settings.dqnActivations = defaultSettings.dqnActivations;
         settings.criticActivations = defaultSettings.criticActivations;
         settings.actorActivations = defaultSettings.actorActivations;
         settings.algo = defaultSettings.algo;
+        settings.ppoClip = defaultSettings.ppoClip;
+        settings.entropyBonus = defaultSettings.entropyBonus;
+        settings.tau = defaultSettings.tau;
+        settings.trainingEpochs = defaultSettings.trainingEpochs;
+        settings.asyncAgents = defaultSettings.asyncAgents;
+        settings.dqnNetStructure = defaultSettings.dqnNetStructure;
+        settings.actorNetStructure = defaultSettings.actorNetStructure;
+        settings.criticNetStructure = defaultSettings.criticNetStructure;
+        settings.saveLocation = defaultSettings.saveLocation;
     }
-
+    /// <summary>
+    /// Load settings from file.
+    /// </summary>
     public void LoadSettings()
     {
         settings.agentName = loadSettings.agentName;
@@ -90,7 +105,7 @@ public class RLManager : MonoBehaviour
         settings.miniBatchSize = loadSettings.miniBatchSize;
         settings.netCopyRate = loadSettings.netCopyRate;
         settings.gamma = loadSettings.gamma;
-        settings.learningRate = loadSettings.learningRate;
+        settings.dqnLearningRate = loadSettings.dqnLearningRate;
         settings.actorLearningRate = loadSettings.actorLearningRate;
         settings.criticLearningRate = loadSettings.criticLearningRate;
         settings.beta1 = loadSettings.beta1;
@@ -101,11 +116,23 @@ public class RLManager : MonoBehaviour
         settings.fieldOfView = loadSettings.fieldOfView;
         settings.collisionDetectRange = loadSettings.collisionDetectRange;
         settings.autoSaveEpisode = loadSettings.autoSaveEpisode;
-        settings.activations = loadSettings.activations;
-        settings.criticActivations = defaultSettings.criticActivations;
-        settings.actorActivations = defaultSettings.actorActivations;
+        settings.dqnActivations = loadSettings.dqnActivations;
+        settings.criticActivations = loadSettings.criticActivations;
+        settings.actorActivations = loadSettings.actorActivations;
         settings.algo = loadSettings.algo;
+        settings.ppoClip = loadSettings.ppoClip;
+        settings.entropyBonus = loadSettings.entropyBonus;
+        settings.tau = loadSettings.tau;
+        settings.trainingEpochs = loadSettings.trainingEpochs;
+        settings.asyncAgents = loadSettings.asyncAgents;
+        settings.dqnNetStructure = loadSettings.dqnNetStructure;
+        settings.actorNetStructure = loadSettings.actorNetStructure;
+        settings.criticNetStructure = loadSettings.criticNetStructure;
+        settings.saveLocation = loadSettings.saveLocation;
     }
+    /// <summary>
+    /// Calculates a random spawn location (Given x and z bounds)
+    /// </summary>
     public void RandomSpawn()
     {
         float randomX = Random.Range(spawnMin_X, spawnMax_X);
@@ -114,7 +141,9 @@ public class RLManager : MonoBehaviour
         spawnpoint.position = randomSpawnVector;
 
     }
-    // Method to spawn AI
+    /// <summary>
+    /// Method to spawn an agent.
+    /// </summary>
     public void SpawnAgent()
     {
         RandomSpawn();
