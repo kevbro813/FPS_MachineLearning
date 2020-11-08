@@ -22,7 +22,15 @@ public class RLManager : MonoBehaviour
     public float spawnMin_Z; // Min Z bound
     public float spawnMax_Z; // Max Z bound
     public bool isSessionPaused; // Used to fully pause the session
-   
+
+    public RandomObjective randObj;
+    public Vector3 objectiveLocation;
+
+    public void UpdateObjectiveLocation()
+    {
+        randObj.RandomLocation();
+        objectiveLocation = randObj.objectiveLocation;
+    }
     private void Awake()
     {
         // Singleton pattern
@@ -139,7 +147,6 @@ public class RLManager : MonoBehaviour
         float randomZ = Random.Range(spawnMin_Z, spawnMax_Z);
         Vector3 randomSpawnVector = new Vector3(randomX, 1.5f, randomZ);
         spawnpoint.position = randomSpawnVector;
-
     }
     /// <summary>
     /// Method to spawn an agent.

@@ -108,10 +108,10 @@ public class Layer
     private int inputQty; // Number of inputs to the layer
     private int outputQty; // Number of outputs from the layer
     public double[] outputs; // Array to store outputs (After activation function)
-    private double[] inputs; // Array to store the inputs (values passed into the layer)
+    public double[] inputs; // Array to store the inputs (values passed into the layer)
     private double[][] weightsDelta; // weightsdelta are the gradients before being passed through the Adam Optimizer
     public double[] gamma; // Not to be confused with the discount rate gamma, this gamma is used in backprop and = error * (activation function derivative)
-    private double[] error; // The error used to begin backpropagation (only used in output layer)
+    public double[] error; // The error used to begin backpropagation (only used in output layer)
     public double[][] weights; // 2-D array to store the network's weights
     public double[] biases; // Network biases (Constant that acts like the y-intercept)
 

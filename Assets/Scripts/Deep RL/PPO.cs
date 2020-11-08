@@ -12,31 +12,31 @@ public class PPO
     private Agent agent;
     private NeuralNetwork actorNet;
     private NeuralNetwork criticNet;
-    private float ppoClip; // Amount to clip surrogate, usually 0.2
-    private int actionQty; // Number of actions
-    private float clipMinimum; // Determined using ppoClip, lower bound
-    private float clipMaximum; // Determined using ppoClip, upper bound
-    private double entropyBonus; // Bonus entropy added to promote random behaviour until learned behaviors strengthen.
-    private double gamma; // Reward discount
-    private double tau; // Discount used in GAE calculation
-    private double delta; // "delta t" used in GAE calculation
-    private int trainingEpochs; // Number of times a network will be trained on an episode's data
-    private double lastGAE; // Used to temporarily save GAE value
-    private int batchSize; // Size of the batch = frameBufferSize - framesPerState + 1
-    private double[] rewards; // Stores a batch of rewards
-    private int[] actions; // Stores a batch of actions taken during episode
-    private double[][] predictions; // Stores action probabilities taken during episode
-    private double[] values; // Save state values
-    private bool[] dones; // Saves done flags
-    private double[] advantages; // Advantage calculation used in Clipped Surrogate Objective Function
-    private double[] newLogProbs; // The negative of the log probabilities taken during training and used in Clipped Surrogate Objective Function
-    private double[][] oldLogProbs; // The negative of the log probabilities taken during the episode and used in Clipped Surrogate Objective Function
-    private double[] ratios; // Ratios calculated for Clipped Surrogate Objective Function
-    private double[] p1; // advantage * ratio
-    private double[] p2; // advantage * clip(ratio)
-    private double[] actorError; // The final output of the Clipped Surrogate Objective Function that is used in backpropagation
-    private double[] returns; // Returns used to backpropagate critic network
-    private int[][] oneHotActions; // Stores one hot actions for an episode
+    public float ppoClip; // Amount to clip surrogate, usually 0.2
+    public int actionQty; // Number of actions
+    public float clipMinimum; // Determined using ppoClip, lower bound
+    public float clipMaximum; // Determined using ppoClip, upper bound
+    public double entropyBonus; // Bonus entropy added to promote random behaviour until learned behaviors strengthen.
+    public double gamma; // Reward discount
+    public double tau; // Discount used in GAE calculation
+    public double delta; // "delta t" used in GAE calculation
+    public int trainingEpochs; // Number of times a network will be trained on an episode's data
+    public double lastGAE; // Used to temporarily save GAE value
+    public int batchSize; // Size of the batch = frameBufferSize - framesPerState + 1
+    public double[] rewards; // Stores a batch of rewards
+    public int[] actions; // Stores a batch of actions taken during episode
+    public double[][] predictions; // Stores action probabilities taken during episode
+    public double[] values; // Save state values
+    public bool[] dones; // Saves done flags
+    public double[] advantages; // Advantage calculation used in Clipped Surrogate Objective Function
+    public double[] newLogProbs; // The negative of the log probabilities taken during training and used in Clipped Surrogate Objective Function
+    public double[] oldLogProbs; // The negative of the log probabilities taken during the episode and used in Clipped Surrogate Objective Function
+    public double[] ratios; // Ratios calculated for Clipped Surrogate Objective Function
+    public double[] p1; // advantage * ratio
+    public double[] p2; // advantage * clip(ratio)
+    public double[] actorError; // The final output of the Clipped Surrogate Objective Function that is used in backpropagation
+    public double[] returns; // Returns used to backpropagate critic network
+    public int[] oneHotActions; // Stores one hot actions for an episode
 
     public double actorLoss; // Loss for the actor network
     public double criticLoss; // Loss for the critic network
@@ -56,8 +56,6 @@ public class PPO
         actorNet = actor;
         criticNet = critic;
         actionQty = actQty;
-        clipMinimum = 1 - ppoClip;
-        clipMaximum = 1 + ppoClip;
         actorLoss = 0;
         criticLoss = 0;
         gamma = RLManager.instance.settings.gamma;
@@ -65,6 +63,8 @@ public class PPO
         entropyBonus = RLManager.instance.settings.entropyBonus;
         tau = RLManager.instance.settings.tau;
         trainingEpochs = RLManager.instance.settings.trainingEpochs;
+        clipMinimum = 1 - ppoClip;
+        clipMaximum = 1 + ppoClip;
 
         // PPO trains after every episode and uses the entire batch once. Therefore, the batch size will be the episode length - framesPerState + 1
         // This is due to the experience buffer not starting until there are enough frames.
@@ -78,12 +78,12 @@ public class PPO
         advantages = new double[batchSize];
         returns = new double[batchSize];
         newLogProbs = new double[actionQty];
-        oldLogProbs = new double[batchSize][];
+        oldLogProbs = new double[actionQty];
         ratios = new double[actionQty];
         p1 = new double[actionQty];
         p2 = new double[actionQty];
         actorError = new double[actionQty];
-        oneHotActions = new int[batchSize][];
+        oneHotActions = new int[actionQty];
         actions = new int[batchSize];
     }
     /// <summary>
@@ -140,7 +140,7 @@ public class PPO
             {
                 double[] state = env.GetState(j); // Create a state from the frame buffer
                 ClippedSurrogateObjective(state, batchIndex); // Run the clipped surrogate objective (Main part of PPO)
-                UpdateActor(state, actorError, oneHotActions[batchIndex]); // Update the actor network
+                UpdateActor(state, actorError, oneHotActions); // Update the actor network
                 UpdateCritic(state, returns[batchIndex]); // Update the critic network
                 batchIndex++;
             }
@@ -159,11 +159,12 @@ public class PPO
         double stateValue = criticNet.FeedForward(state)[0];
 
         newLogProbs = RLManager.math.LogProbs(yPred); // Get the negative of the log probabilities (new calculated probabilities), negative logs needed for gradient ascent
-        
+        oldLogProbs = RLManager.math.LogProbs(predictions[batchIndex]);
+
         // ratio = new log / old log = E^(new log - old log)
         for (int i = 0; i < actionQty; i++)
         {
-            ratios[i] = Math.Exp(newLogProbs[i] - oldLogProbs[batchIndex][i]);  // Old log probs are calculated during the episode to improve training efficiency
+            ratios[i] = Math.Exp(newLogProbs[i] - oldLogProbs[i]);  // Old log probs are calculated during the episode to improve training efficiency
         }
 
         // Calculate the output "actorError" of the objective function
@@ -175,7 +176,10 @@ public class PPO
             // loss = -mean(minimum(p1, p2) + entropyLoss * -(prob * K.log(prob + 1e-10)))
             actorError[i] = Math.Min(p1[i], p2[i]) + entropyBonus * -(yPred[actions[batchIndex]] * Math.Log(yPred[actions[batchIndex]] + 1e-10)); 
         }
-        
+
+        oneHotActions = new int[actionQty];
+        oneHotActions[actions[batchIndex]] = 1;
+
         actorLoss = 0; // TODO: Actor loss calculation
 
         CriticLoss(returns[batchIndex], stateValue); // Calculate critic loss for display (just for show)
@@ -222,9 +226,7 @@ public class PPO
             rewards[i] = agent.ppoExperienceBuffer[i].Item2;
             predictions[i] = agent.ppoExperienceBuffer[i].Item3;
             values[i] = agent.ppoExperienceBuffer[i].Item4;
-            oneHotActions[i] = agent.ppoExperienceBuffer[i].Item5;
-            oldLogProbs[i] = agent.ppoExperienceBuffer[i].Item6;
-            dones[i] = agent.ppoExperienceBuffer[i].Item7;
+            dones[i] = agent.ppoExperienceBuffer[i].Item5;
         }
     }
     /// <summary>

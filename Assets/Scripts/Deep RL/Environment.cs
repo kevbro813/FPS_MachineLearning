@@ -52,7 +52,7 @@ public class Environment
 
         if (isOnObjective)
         {
-            reward++;
+            reward += 5;
         }
         else
         {
@@ -66,7 +66,7 @@ public class Environment
                 reward--;
             }
         }
-        reward += currentCheckpointReward;
+        //reward += currentCheckpointReward;
 
         return reward;
     }
@@ -84,14 +84,16 @@ public class Environment
         // Populate the next_Frame array with the respective values
         nextFrame[0] = tf.position.z;
         nextFrame[1] = tf.position.x;
-        nextFrame[2] = distancesToObstacles[0];
-        nextFrame[3] = distancesToObstacles[1];
-        nextFrame[4] = distancesToObstacles[2];
-        nextFrame[5] = distancesToObstacles[3];
-        nextFrame[6] = distancesToObstacles[4];
-        nextFrame[7] = distancesToObstacles[5];
-        nextFrame[8] = distancesToObstacles[6];
-        nextFrame[9] = distancesToObstacles[7];
+        nextFrame[2] = tf.position.z - RLManager.instance.objectiveLocation.z;
+        nextFrame[3] = tf.position.x - RLManager.instance.objectiveLocation.x;
+        nextFrame[4] = distancesToObstacles[0];
+        nextFrame[5] = distancesToObstacles[1];
+        nextFrame[6] = distancesToObstacles[2];
+        nextFrame[7] = distancesToObstacles[3];
+        nextFrame[8] = distancesToObstacles[4];
+        nextFrame[9] = distancesToObstacles[5];
+        nextFrame[10] = distancesToObstacles[6];
+        nextFrame[11] = distancesToObstacles[7];
         //nextFrame[10] = tf.transform.eulerAngles.y;
 
         return nextFrame; // Return nextFrame

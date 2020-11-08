@@ -10,7 +10,7 @@ public class Agent
     private int expBufferSize; // Size of the experience buffer
     private int actionQty; // Number of actions
     public Tuple<int, int, double, bool>[] experienceBuffer; // Tuple that holds the Index of the last frame(used to calculate states), action, reward and done flag 
-    public Tuple<int, double, double[], double, int[], double[], bool>[] ppoExperienceBuffer;
+    public Tuple<int, double, double[], double, bool>[] ppoExperienceBuffer;
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
     public bool isExploit = true; // Is the agent's action explore or exploit (will change the color of the agent to red if exploit and white if explore)
@@ -38,7 +38,7 @@ public class Agent
         UnityEngine.Random.InitState(seed);
         expBufferSize = RLManager.instance.settings.expBufferSize;
         experienceBuffer = new Tuple<int, int, double, bool>[expBufferSize];
-        ppoExperienceBuffer = new Tuple<int, double, double[], double, int[], double[], bool>[expBufferSize];
+        ppoExperienceBuffer = new Tuple<int, double, double[], double, bool>[expBufferSize];
         bufferIndex = 0;
         bufferCount = 0;
         actionQty = actQty;
@@ -182,7 +182,7 @@ public class Agent
     /// <param name="oneHot"></param>
     /// <param name="oldLog"></param>
     /// <param name="dones"></param>
-    public void PPOExperience(int actions, double rewards, double[] predictions, double values, int[] oneHot, double[] oldLog, bool dones) 
+    public void PPOExperience(int actions, double rewards, double[] predictions, double values, bool dones) 
     {
         double[] preds = new double[actionQty];
         for (int i = 0; i < actionQty; i++)
@@ -190,7 +190,7 @@ public class Agent
             preds[i] = predictions[i]; // This is needed to store the prediction values properly in the tuple
         }
         // Create a new tuple with the data passed in
-        Tuple<int, double, double[], double, int[], double[], bool> nTuple = new Tuple<int, double, double[], double, int[], double[], bool>(actions, rewards, preds, values, oneHot, oldLog, dones); 
+        Tuple<int, double, double[], double, bool> nTuple = new Tuple<int, double, double[], double, bool>(actions, rewards, preds, values, dones); 
         
         ppoExperienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
     }

@@ -91,13 +91,9 @@ public class RLComponent : MonoBehaviour
 
             // Change the agent's color depending on explore vs exploit
             if (agent.isExploit)
-            {
                 mat.color = red;
-            }
             else
-            {
                 mat.color = white;
-            }
         }
     }
     /// <summary>
@@ -187,6 +183,8 @@ public class RLComponent : MonoBehaviour
         epochs = 0;
         episodeNum = 1;
         isAgentActive = true;
+
+        RLManager.instance.UpdateObjectiveLocation(); // Set an initial location for the objective
     }
     /// <summary>
     /// Save variable settings locally.
@@ -321,24 +319,24 @@ public class RLComponent : MonoBehaviour
         double[] state = env.GetState(env.fbIndex - 1);
 
         // Get action probabilities from actor net
-        double[] actionProbs = actorNet.FeedForward(state);
+        double[] predictions = actorNet.FeedForward(state);
 
         // Calculate the state value using the critic net
         double value = criticNet.FeedForward(state)[0];
         
-        int currentAction = agent.PPOAction(actionProbs); // Perform action and return one hot array
+        int currentAction = agent.PPOAction(predictions); // Perform action and return one hot array
 
         // Calculate one hot vector needed for softmax derivative
         int[] oneHotAction = new int[actionQty];
         oneHotAction[currentAction] = 1;
 
         // Get the negative of the log probabilities (old stored probabilities) = -1 * Log(probability)
-        double[] oldLogProb = RLManager.math.LogProbs(actionProbs);
+        double[] oldLogProb = RLManager.math.LogProbs(predictions);
 
         double reward = Reward(); // Store reward
 
         // Store actions, rewards, predictions (actionProbs), values (value function) and dones as tuples
-        PPOExperience(currentAction, reward, actionProbs, value, oneHotAction, oldLogProb, isDone); // TODO: Add one hot and old log probs to batch
+        PPOExperience(currentAction, reward, predictions, value, isDone); // TODO: Add one hot and old log probs to batch
 
         // Advance frame
         double[] nextFrame = env.GetNextFrame(); // Creates next frame
@@ -452,7 +450,7 @@ public class RLComponent : MonoBehaviour
     /// <param name="oneHotAct"></param>
     /// <param name="oldLogProb"></param>
     /// <param name="done"></param>
-    private void PPOExperience(int action, double reward, double[] prediction, double value, int[] oneHotAct, double[] oldLogProb, bool done)
+    private void PPOExperience(int action, double reward, double[] prediction, double value, bool done)
     {
         // Check that a state is ready, AKA there are enough frames to create a state
         if (!isStateReady)
@@ -466,7 +464,7 @@ public class RLComponent : MonoBehaviour
         if (isStateReady) // If the state is ready
         {
             // Update experience replay memory
-            agent.PPOExperience(action, reward, prediction, value, oneHotAct, oldLogProb, done);
+            agent.PPOExperience(action, reward, prediction, value, done);
             agent.UpdateExperienceBufferCounters(); // Update bufferIndex and bufferCount variables
         }
     }
@@ -476,9 +474,7 @@ public class RLComponent : MonoBehaviour
     private void DoneCheck()
     {
         if (epiSteps >= episodeMaxSteps)
-        {
             isDone = true;
-        }
     }
     /// <summary>
     /// Check if the episode has elapsed and begin new episode if true.
@@ -498,6 +494,10 @@ public class RLComponent : MonoBehaviour
 
             // Generate a random spawn
             RLManager.instance.RandomSpawn();
+
+            // Random Objective
+            RLManager.instance.UpdateObjectiveLocation();
+
             tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
 
             // Updates the average reward with the latest episode
