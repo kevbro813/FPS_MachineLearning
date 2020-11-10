@@ -326,13 +326,6 @@ public class RLComponent : MonoBehaviour
         
         int currentAction = agent.PPOAction(predictions); // Perform action and return one hot array
 
-        // Calculate one hot vector needed for softmax derivative
-        int[] oneHotAction = new int[actionQty];
-        oneHotAction[currentAction] = 1;
-
-        // Get the negative of the log probabilities (old stored probabilities) = -1 * Log(probability)
-        double[] oldLogProb = RLManager.math.LogProbs(predictions);
-
         double reward = Reward(); // Store reward
 
         // Store actions, rewards, predictions (actionProbs), values (value function) and dones as tuples
