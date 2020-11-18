@@ -258,20 +258,21 @@ public class MathFunctions
     /// Recalculates the mean by including the newest datapoint.
     /// </summary>
     /// <param name="sampleSize"></param>
-    /// <param name="mean"></param>
+    /// <param name="oldMean"></param>
     /// <param name="dp"></param>
     /// <returns></returns>
-    public double UpdateMean(int sampleSize, double mean, double dp)
+    public double UpdateMean(int sampleSize, double oldMean, double dp)
     {
+        double newMean;
         if (sampleSize == 1) // If sample size = 1 then the mean is equal to the datapoint
-            mean = dp;
+            newMean = dp;
         else
         {
-            double sampleTotal = mean * (sampleSize - 1); // Calculate the total from the old mean
+            double sampleTotal = oldMean * (sampleSize - 1); // Calculate the total from the old mean
             sampleTotal += dp; // Add the new datapoint to the sample total
-            mean = sampleTotal / sampleSize; // Recalculate the mean
+            newMean = sampleTotal / sampleSize; // Recalculate the mean
         }
-        return mean;
+        return newMean;
     }
     /// <summary>
     /// Scalar function (calculates zScore)
@@ -283,7 +284,7 @@ public class MathFunctions
     public double ZScore(double dp, double mean, double stdDev)
     {
         // Calculate a state's Z-score = (data point - mean) / standard deviation
-        double zScore = (dp - mean) / (stdDev + .00001);
+        double zScore = (dp - mean) / (stdDev + 1e-10);
         return zScore;
     }
 }

@@ -10,12 +10,18 @@ public class NeuralNetwork
     private int[] neuralNetStructure; // Contains the number of neurons in each layer
     public Layer[] layers;
 
+    public double[] frameMeans;
+    public double[] zScores;
+    public double[] totalSqrdDiff;
+    public int sampleSize;
     /// <summary>
     /// Neural Network Constructor for DQN.
     /// </summary>
     /// <param name="layers"></param>
     public NeuralNetwork(int[] layerTemplate)
     {
+        Init_Normalization(layerTemplate[0]);
+
         this.neuralNetStructure = new int[layerTemplate.Length]; //  Create a new array of neural layers using the size of the layers parameter
         
         for (int i = 0; i < layerTemplate.Length; i++) // Iterate through each layer
@@ -33,6 +39,8 @@ public class NeuralNetwork
     /// <param name="isActor"></param>
     public NeuralNetwork(int[] layerTemplate, bool isActor) // Used to create network for PPO
     {
+        Init_Normalization(layerTemplate[0]);
+
         this.neuralNetStructure = new int[layerTemplate.Length]; //  Create a new array of neural layers using the size of the layers parameter
 
         for (int i = 0; i < layerTemplate.Length; i++) // Iterate through each layer
@@ -43,6 +51,14 @@ public class NeuralNetwork
         for (int i = 0; i < layers.Length; i++) // Initialize hidden layers
             layers[i] = new Layer(layerTemplate[i], layerTemplate[i + 1], i, isActor);
     }
+
+    private void Init_Normalization(int inputsPerState)
+    {
+        sampleSize = 0;
+        frameMeans = new double[inputsPerState];
+        zScores = new double[inputsPerState];
+        totalSqrdDiff = new double[inputsPerState];
+    }
     /// <summary>
     /// Forward pass of data through the neural network.
     /// </summary>
@@ -50,7 +66,8 @@ public class NeuralNetwork
     /// <returns></returns>
     public double[] FeedForward(double[] inputs)
     {
-        layers[0].FeedForward(inputs); // Feed forward inputs through the first hidden layer
+        //layers[0].FeedForward(NormalizeState(inputs, layers[0].inputs.Length)); // Feed forward inputs through the first hidden layer
+        layers[0].FeedForward(inputs);
 
         // Pass data through each hidden layer and end with output layer
         for (int i = 1; i < layers.Length; i++) 
@@ -97,6 +114,23 @@ public class NeuralNetwork
     {
         for (int i = 0; i < layers.Length; i++) // Loop through each layer and optimize
             layers[i].Optimize();
+    }
+    public double[] NormalizeState(double[] state, int stateSize)
+    {
+        sampleSize++;
+        double[] variances = new double[stateSize];
+        double[] stdDeviations = new double[stateSize];
+
+        for (int i = 0; i < stateSize; i++)
+        {
+            frameMeans[i] = RLManager.math.UpdateMean(sampleSize, frameMeans[i], state[i]);
+            totalSqrdDiff[i] += RLManager.math.SquaredDifference(state[i], frameMeans[i]);
+            variances[i] = RLManager.math.Variance(totalSqrdDiff[i], sampleSize);
+            stdDeviations[i] = RLManager.math.StdDeviation(variances[i]);
+            zScores[i] = RLManager.math.ZScore(state[i], frameMeans[i], stdDeviations[i]);
+        }
+
+        return zScores;
     }
 }
 /// <summary>
@@ -354,7 +388,6 @@ public class Layer
                 firstMoment[i, j] = (beta1 * firstMoment[i, j]) + (1 - beta1) * gradient; // First moment bias calculation
                 secondMoment[i, j] = (beta2 * secondMoment[i, j]) + (1 - beta2) * (gradient * gradient); // Second moment bias calculation
                 weights[i][j] -= currentLearningRate * firstMoment[i, j] / (Math.Sqrt(secondMoment[i, j]) + epsilonHat); // Update weights using gradient descent
-
             }
         }
     }

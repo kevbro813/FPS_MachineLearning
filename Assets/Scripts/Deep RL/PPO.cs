@@ -122,11 +122,9 @@ public class PPO
                 delta = rewards[i] + gamma * values[i + 1] - values[i]; // delta = reward + gamma * (next state value) * 1(done) - (current state value)
             }
             
-            lastGAE = delta + gamma * tau * d * lastGAE; // last GAE = delta + gamma * tau * done * lastGAE (future rewards have an effect on advantage estimation)
-            advantages[i] = lastGAE; // Store advantages
+            lastGAE = delta + gamma * tau * d * lastGAE; // lastGAE = delta + gamma * tau * done * lastGAE (future rewards have an effect on advantage estimation)
             returns[i] = lastGAE + values[i]; // Returns calculation (used to update Critic Network)
         }
-        advantages = RLManager.math.Normalize(advantages); // Normalize the advantages
     }
     /// <summary>
     /// Train the agent for "x" training epochs after an episode.
@@ -155,8 +153,14 @@ public class PPO
     {
         // Use actor network to calculate y Prediction
         double[] yPred = actorNet.FeedForward(state);
+
         // Use critic network to calculate state Value
         double stateValue = criticNet.FeedForward(state)[0];
+
+        advantages[batchIndex] = returns[batchIndex] - stateValue;
+
+        oneHotActions = new int[actionQty];
+        oneHotActions[actions[batchIndex]] = 1;
 
         newLogProbs = RLManager.math.LogProbs(yPred); // Get the negative of the log probabilities (new calculated probabilities), negative logs needed for gradient ascent
         oldLogProbs = RLManager.math.LogProbs(predictions[batchIndex]);
@@ -176,9 +180,6 @@ public class PPO
             // loss = -mean(minimum(p1, p2) + entropyLoss * -(prob * K.log(prob + 1e-10)))
             actorError[i] = Math.Min(p1[i], p2[i]) + entropyBonus * -(yPred[actions[batchIndex]] * Math.Log(yPred[actions[batchIndex]] + 1e-10)); 
         }
-
-        oneHotActions = new int[actionQty];
-        oneHotActions[actions[batchIndex]] = 1;
 
         actorLoss = 0; // TODO: Actor loss calculation
 
@@ -244,7 +245,7 @@ public class PPO
     /// Train the actor network using policy gradient. Error should already be calculated.
     /// </summary>
     /// <param name="states"></param>
-    /// <param name="targets"></param>
+    /// <param name="error"></param>
     /// <param name="actions"></param>
     private void UpdateActor(double[] states, double[] error, int[] actions)
     {

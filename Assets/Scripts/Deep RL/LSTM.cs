@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-
+/// <summary>
+/// UNDER CONSTRUCTION
+/// </summary>
 public class LSTM
 {
     private int inputQty; // Number of inputs to the layer
