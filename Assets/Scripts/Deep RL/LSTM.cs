@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 /// <summary>
-/// UNDER CONSTRUCTION
+/// WORK IN PROGRESS
 /// </summary>
 public class LSTM
 {

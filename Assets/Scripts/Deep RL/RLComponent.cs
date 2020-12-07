@@ -76,8 +76,6 @@ public class RLComponent : MonoBehaviour
 
     public Settings.Algorithm algo; // The RL algorithm being used
 
-
-
     private void Start()
     {
         tf = GetComponent<Transform>();
@@ -185,8 +183,8 @@ public class RLComponent : MonoBehaviour
         epochs = 0;
         episodeNum = 1;
         isAgentActive = true;
-
-        //RLManager.instance.UpdateObjectiveLocation(); // Set an initial location for the objective
+        
+        RLManager.instance.UpdateObjectiveLocation(); // Set an initial location for the objective // TODO: RANDOM OBJECTIVE
     }
     /// <summary>
     /// Save variable settings locally.
@@ -492,7 +490,7 @@ public class RLComponent : MonoBehaviour
             RLManager.instance.RandomSpawn();
 
             // Random Objective
-            //RLManager.instance.UpdateObjectiveLocation();
+            RLManager.instance.UpdateObjectiveLocation();
 
             tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
 

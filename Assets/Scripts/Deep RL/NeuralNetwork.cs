@@ -51,7 +51,10 @@ public class NeuralNetwork
         for (int i = 0; i < layers.Length; i++) // Initialize hidden layers
             layers[i] = new Layer(layerTemplate[i], layerTemplate[i + 1], i, isActor);
     }
-
+    /// <summary>
+    /// Initialize arrays and variables used for normalizing inputs.
+    /// </summary>
+    /// <param name="inputsPerState"></param>
     private void Init_Normalization(int inputsPerState)
     {
         sampleSize = 0;
@@ -115,6 +118,12 @@ public class NeuralNetwork
         for (int i = 0; i < layers.Length; i++) // Loop through each layer and optimize
             layers[i].Optimize();
     }
+    /// <summary>
+    /// This method will normalize the inputs passed into the feed forward net. Uses sample mean.
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="stateSize"></param>
+    /// <returns></returns>
     public double[] NormalizeState(double[] state, int stateSize)
     {
         sampleSize++;

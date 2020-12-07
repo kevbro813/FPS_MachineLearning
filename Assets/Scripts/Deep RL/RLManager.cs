@@ -28,7 +28,7 @@ public class RLManager : MonoBehaviour
 
     public void UpdateObjectiveLocation()
     {
-        randObj.RandomLocation();
+        randObj.RandomLocation(); // TODO: RANDOM OBJECTIVE
         objectiveLocation = randObj.objectiveLocation;
     }
     private void Awake()

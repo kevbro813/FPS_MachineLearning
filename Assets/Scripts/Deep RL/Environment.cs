@@ -38,6 +38,8 @@ public class Environment
         rlComponent = rl;
         fbIndex = 0;
         fbCount = 0;
+        zObjDist = 0;
+        xObjDist = 0;
         distancesToObstacles = new double[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
         frameBufferSize = RLManager.instance.settings.frameBufferSize;
         framesPerState = RLManager.instance.settings.framesPerState;
@@ -45,7 +47,6 @@ public class Environment
         inputsPerState = rlComponent.inputsPerState;
         collisionDetectRange = RLManager.instance.settings.collisionDetectRange;
         frameBuffer = new double[frameBufferSize][];
-        //nextFrame = new double[inputsPerFrame]; // Create a float array to hold the next frame
     }
     /// <summary>
     /// Calculates the reward. This can be changed to reinforce behaviors.
@@ -56,8 +57,8 @@ public class Environment
 
         if (isOnObjective)
         {
-            reward += 1;
-            //isOnObjective = false;
+            reward += 10;
+            isOnObjective = false;
         }
         else
         {
@@ -103,12 +104,12 @@ public class Environment
 
         double[] nextFrame = new double[inputsPerFrame]; // Create a float array to hold the next frame
 
-        //zObjDist = tf.position.z - RLManager.instance.objectiveLocation.z; // z distance to objective
-        //xObjDist = tf.position.x - RLManager.instance.objectiveLocation.x; // x distance to objective
+        zObjDist = tf.position.z - RLManager.instance.objectiveLocation.z; // z distance to objective
+        xObjDist = tf.position.x - RLManager.instance.objectiveLocation.x; // x distance to objective
 
         // Populate the next_Frame array with the respective values
-        nextFrame[0] = tf.position.z;
-        nextFrame[1] = tf.position.x;
+        nextFrame[0] = zObjDist;
+        nextFrame[1] = xObjDist;
         nextFrame[2] = distancesToObstacles[0];
         nextFrame[3] = distancesToObstacles[1];
         nextFrame[4] = distancesToObstacles[2];
@@ -117,8 +118,8 @@ public class Environment
         nextFrame[7] = distancesToObstacles[5];
         nextFrame[8] = distancesToObstacles[6];
         nextFrame[9] = distancesToObstacles[7];
-        //nextFrame[10] = zObjDist;
-        //nextFrame[11] = xObjDist;
+        //nextFrame[10] = tf.position.z;
+        //nextFrame[11] = tf.position.x;
         //nextFrame[12] = tf.transform.eulerAngles.y;
 
         return nextFrame; // Return nextFrame

@@ -10,7 +10,10 @@ public class RandomObjective : MonoBehaviour
     public float locationMax_Z;
     public Transform tf;
     public Vector3 objectiveLocation;
-
+    private void Start()
+    {
+        objectiveLocation = tf.position;
+    }
     public void RandomLocation()
     {
         float randomX = Random.Range(locationMin_X, locationMax_X);

@@ -119,7 +119,7 @@ public class PPO
             else // All other episodes
             {
                 d = 1; // Set to one for lastGAE calculation
-                delta = rewards[i] + gamma * values[i + 1] - values[i]; // delta = reward + gamma * (next state value) * 1(done) - (current state value)
+                delta = rewards[i] + gamma * values[i + 1] - values[i]; // delta = reward + gamma * next_state_value * done - current_state_value
             }
             
             lastGAE = delta + gamma * tau * d * lastGAE; // lastGAE = delta + gamma * tau * done * lastGAE (future rewards have an effect on advantage estimation)
@@ -131,17 +131,13 @@ public class PPO
     /// </summary>
     private void Train()
     {
-        for (int i = 0; i < trainingEpochs; i++) // Run training "x" number of times over the training data collected during one episode
+        for (int i = 0; i < trainingEpochs * batchSize; i++) // Run training "x" number of times over the training data collected during one episode
         {
-            int batchIndex = 0; // Used to iterate through stored batch data
-            for (int j = env.framesPerState - 1; j < env.frameBufferSize; j++) // Begin iterating at the first frame that makes a full state and end with the last frame
-            {
-                double[] state = env.GetState(j); // Create a state from the frame buffer
-                ClippedSurrogateObjective(state, batchIndex); // Run the clipped surrogate objective (Main part of PPO)
-                UpdateActor(state, actorError, oneHotActions); // Update the actor network
-                UpdateCritic(state, returns[batchIndex]); // Update the critic network
-                batchIndex++;
-            }
+            int batchIndex = UnityEngine.Random.Range(0, batchSize);
+            double[] state = env.GetState(batchIndex + RLManager.instance.settings.framesPerState - 1); // Create a state from the frame buffer
+            ClippedSurrogateObjective(state, batchIndex); // Run the clipped surrogate objective (Main part of PPO)
+            UpdateActor(state, actorError, oneHotActions); // Update the actor network
+            UpdateCritic(state, returns[batchIndex]); // Update the critic network
         }
     }
     /// <summary>
@@ -157,7 +153,7 @@ public class PPO
         // Use critic network to calculate state Value
         double stateValue = criticNet.FeedForward(state)[0];
 
-        advantages[batchIndex] = returns[batchIndex] - stateValue;
+        advantages[batchIndex] = returns[batchIndex] - values[batchIndex];
 
         oneHotActions = new int[actionQty];
         oneHotActions[actions[batchIndex]] = 1;

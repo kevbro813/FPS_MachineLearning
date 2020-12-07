@@ -39,7 +39,7 @@ MonoBehaviour:
   ppoClip: 0.2
   entropyBonus: 0.00005
   tau: 0.95
-  trainingEpochs: 4
+  trainingEpochs: 6
   asyncAgents: 1
   saveLocation: E:\\ML_Specimen
   dqnNetStructure: 1e0000003c000000280000001e00000005000000

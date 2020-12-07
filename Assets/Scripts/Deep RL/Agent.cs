@@ -179,8 +179,6 @@ public class Agent
     /// <param name="rewards"></param>
     /// <param name="predictions"></param>
     /// <param name="values"></param>
-    /// <param name="oneHot"></param>
-    /// <param name="oldLog"></param>
     /// <param name="dones"></param>
     public void PPOExperience(int actions, double rewards, double[] predictions, double values, bool dones) 
     {
