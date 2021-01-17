@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class RLManager : MonoBehaviour
 {
+    #region Variables
     public static RLManager instance;
     public static MathFunctions math; // Math functions needed for algorithms
     public GameObject agentPrefab; // Prefab of the agent to spawn
@@ -25,12 +26,9 @@ public class RLManager : MonoBehaviour
 
     public RandomObjective randObj;
     public Vector3 objectiveLocation;
+    #endregion
 
-    public void UpdateObjectiveLocation()
-    {
-        randObj.RandomLocation(); // TODO: RANDOM OBJECTIVE
-        objectiveLocation = randObj.objectiveLocation;
-    }
+    #region Unity Monobehaviour Methods
     private void Awake()
     {
         // Singleton pattern
@@ -52,6 +50,9 @@ public class RLManager : MonoBehaviour
         rlComponentTester.Init_New_DDQN_Session(true, true, settings.dqnNetStructure);
         isAgentInitialized = false; // Set to false to deactivate save and resume buttons at launch
     }
+    #endregion
+
+    #region Settings
     /// <summary>
     /// Load default settings.
     /// </summary>
@@ -138,6 +139,9 @@ public class RLManager : MonoBehaviour
         settings.criticNetStructure = loadSettings.criticNetStructure;
         settings.saveLocation = loadSettings.saveLocation;
     }
+    #endregion
+
+    #region Spawning and Objective Location Update
     /// <summary>
     /// Calculates a random spawn location (Given x and z bounds)
     /// </summary>
@@ -158,4 +162,10 @@ public class RLManager : MonoBehaviour
         agentObjectsList.Add(agentClone);
         rlComponent = agentClone.GetComponent<RLComponent>();
     }
+    public void UpdateObjectiveLocation()
+    {
+        randObj.RandomLocation(); // TODO: RANDOM OBJECTIVE
+        objectiveLocation = randObj.objectiveLocation;
+    }
+    #endregion
 }

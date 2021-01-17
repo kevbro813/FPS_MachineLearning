@@ -8,38 +8,41 @@ using UnityEngine;
 [Serializable]
 public class PPO
 {
+    #region Variables
     private Environment env;
     private Agent agent;
     private NeuralNetwork actorNet;
     private NeuralNetwork criticNet;
-    public float ppoClip; // Amount to clip surrogate, usually 0.2
-    public int actionQty; // Number of actions
-    public float clipMinimum; // Determined using ppoClip, lower bound
-    public float clipMaximum; // Determined using ppoClip, upper bound
-    public double entropyBonus; // Bonus entropy added to promote random behaviour until learned behaviors strengthen.
-    public double gamma; // Reward discount
-    public double tau; // Discount used in GAE calculation
-    public double delta; // "delta t" used in GAE calculation
-    public int trainingEpochs; // Number of times a network will be trained on an episode's data
-    public double lastGAE; // Used to temporarily save GAE value
-    public int batchSize; // Size of the batch = frameBufferSize - framesPerState + 1
-    public double[] rewards; // Stores a batch of rewards
-    public int[] actions; // Stores a batch of actions taken during episode
-    public double[][] predictions; // Stores action probabilities taken during episode
-    public double[] values; // Save state values
-    public bool[] dones; // Saves done flags
-    public double[] advantages; // Advantage calculation used in Clipped Surrogate Objective Function
-    public double[] newLogProbs; // The negative of the log probabilities taken during training and used in Clipped Surrogate Objective Function
-    public double[] oldLogProbs; // The negative of the log probabilities taken during the episode and used in Clipped Surrogate Objective Function
-    public double[] ratios; // Ratios calculated for Clipped Surrogate Objective Function
-    public double[] p1; // advantage * ratio
-    public double[] p2; // advantage * clip(ratio)
-    public double[] actorError; // The final output of the Clipped Surrogate Objective Function that is used in backpropagation
-    public double[] returns; // Returns used to backpropagate critic network
-    public int[] oneHotActions; // Stores one hot actions for an episode
+    [HideInInspector] public float ppoClip; // Amount to clip surrogate, usually 0.2
+    [HideInInspector] public int actionQty; // Number of actions
+    [HideInInspector] public float clipMinimum; // Determined using ppoClip, lower bound
+    [HideInInspector] public float clipMaximum; // Determined using ppoClip, upper bound
+    [HideInInspector] public double entropyBonus; // Bonus entropy added to promote random behaviour until learned behaviors strengthen.
+    [HideInInspector] public double gamma; // Reward discount
+    [HideInInspector] public double tau; // Discount used in GAE calculation
+    [HideInInspector] public double delta; // "delta t" used in GAE calculation
+    [HideInInspector] public int trainingEpochs; // Number of times a network will be trained on an episode's data
+    [HideInInspector] public double lastGAE; // Used to temporarily save GAE value
+    [HideInInspector] public int batchSize; // Size of the batch = frameBufferSize - framesPerState + 1
+    [HideInInspector] public double[] rewards; // Stores a batch of rewards
+    [HideInInspector] public int[] actions; // Stores a batch of actions taken during episode
+    [HideInInspector] public double[][] predictions; // Stores action probabilities taken during episode
+    [HideInInspector] public double[] values; // Save state values
+    [HideInInspector] public bool[] dones; // Saves done flags
+    [HideInInspector] public double[] advantages; // Advantage calculation used in Clipped Surrogate Objective Function
+    [HideInInspector] public double[] newLogProbs; // The negative of the log probabilities taken during training and used in Clipped Surrogate Objective Function
+    [HideInInspector] public double[] oldLogProbs; // The negative of the log probabilities taken during the episode and used in Clipped Surrogate Objective Function
+    [HideInInspector] public double[] ratios; // Ratios calculated for Clipped Surrogate Objective Function
+    [HideInInspector] public double[] p1; // advantage * ratio
+    [HideInInspector] public double[] p2; // advantage * clip(ratio)
+    [HideInInspector] public double[] actorError; // The final output of the Clipped Surrogate Objective Function that is used in backpropagation
+    [HideInInspector] public double[] returns; // Returns used to backpropagate critic network
+    [HideInInspector] public int[] oneHotActions; // Stores one hot actions for an episode
+    [HideInInspector] public double actorLoss; // Loss for the actor network
+    [HideInInspector] public double criticLoss; // Loss for the critic network
+    #endregion
 
-    public double actorLoss; // Loss for the actor network
-    public double criticLoss; // Loss for the critic network
+    #region Initialization
     /// <summary>
     /// Initialize new PPO training.
     /// </summary>
@@ -86,6 +89,9 @@ public class PPO
         oneHotActions = new int[actionQty];
         actions = new int[batchSize];
     }
+    #endregion
+
+    #region PPO Training
     /// <summary>
     /// Runs one full training session. Returns the mean critic loss.
     /// </summary>
@@ -101,6 +107,20 @@ public class PPO
         Train(); // Train Agent
 
         return criticLoss / batchSize; // Return mean of critic loss for the episode
+    }
+    /// <summary>
+    /// Unpack a batch of data collected from an episode. Converts tuples into individual arrays of batchSize.
+    /// </summary>
+    private void UnpackBatch()
+    {
+        for (int i = 0; i < batchSize; i++)
+        {
+            actions[i] = agent.ppoExperienceBuffer[i].Item1;
+            rewards[i] = agent.ppoExperienceBuffer[i].Item2;
+            predictions[i] = agent.ppoExperienceBuffer[i].Item3;
+            values[i] = agent.ppoExperienceBuffer[i].Item4;
+            dones[i] = agent.ppoExperienceBuffer[i].Item5;
+        }
     }
     /// <summary>
     /// Generalized Advantage Estimation used to get Advantages and Returns
@@ -121,7 +141,7 @@ public class PPO
                 d = 1; // Set to one for lastGAE calculation
                 delta = rewards[i] + gamma * values[i + 1] - values[i]; // delta = reward + gamma * next_state_value * done - current_state_value
             }
-            
+
             lastGAE = delta + gamma * tau * d * lastGAE; // lastGAE = delta + gamma * tau * done * lastGAE (future rewards have an effect on advantage estimation)
             returns[i] = lastGAE + values[i]; // Returns calculation (used to update Critic Network)
         }
@@ -140,6 +160,9 @@ public class PPO
             UpdateCritic(state, returns[batchIndex]); // Update the critic network
         }
     }
+    #endregion
+
+    #region PPO Algorithm (Using Clipped Surrogate Objective)
     /// <summary>
     /// This is the main part of the PPO algorithm.
     /// </summary>
@@ -211,21 +234,9 @@ public class PPO
         else
             return ratio;
     }
+    #endregion
 
-    /// <summary>
-    /// Unpack a batch of data collected from an episode. Converts tuples into individual arrays of batchSize.
-    /// </summary>
-    private void UnpackBatch()
-    {
-        for (int i = 0; i < batchSize; i++)
-        {
-            actions[i] = agent.ppoExperienceBuffer[i].Item1;
-            rewards[i] = agent.ppoExperienceBuffer[i].Item2;
-            predictions[i] = agent.ppoExperienceBuffer[i].Item3;
-            values[i] = agent.ppoExperienceBuffer[i].Item4;
-            dones[i] = agent.ppoExperienceBuffer[i].Item5;
-        }
-    }
+    #region Update Actor/Critic Neural Networks
     /// <summary>
     /// Train the critic network using the state value as the target in backpropagation.
     /// </summary>
@@ -248,4 +259,5 @@ public class PPO
         actorNet.FeedForward(states);
         actorNet.Backpropagation(error, actions);
     }
+    #endregion
 }

@@ -10,6 +10,7 @@ TagManager:
   - Agent
   - AdminMenu
   - UIManager
+  - Turret
   layers:
   - Default
   - TransparentFX

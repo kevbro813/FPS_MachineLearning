@@ -4,6 +4,7 @@ using System.IO;
 
 public static class SaveLoad
 {
+    #region Save/Load Network
     /// <summary>
     /// This method saves a neural network.
     /// </summary>
@@ -83,6 +84,9 @@ public static class SaveLoad
             Debug.Log("There is no file with that name.");
         }
     }
+    #endregion
+
+    #region Save/Load Settings
     /// <summary>
     /// Save the current settings.
     /// </summary>
@@ -111,5 +115,5 @@ public static class SaveLoad
         RLManager.instance.LoadSettings();
         //Debug.Log("Load Settings: " + fileName);
     }
-
+    #endregion
 }

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
@@ -7,6 +6,7 @@ using System.Linq;
 
 public class UIManager : MonoBehaviour
 {
+    #region Variables
     [HideInInspector] public string fileName;
     [HideInInspector] public string settingsName;
     public RLComponent rlComponent;
@@ -75,7 +75,9 @@ public class UIManager : MonoBehaviour
     public Dropdown[] actorActDropdowns;
     public Dropdown[] criticActDropdowns;
     public InputField saveLocationipt;
+    #endregion
 
+    #region Unity Monobehaviour Methods
     private void Start()
     {
         isLoadSettings = true;
@@ -86,7 +88,26 @@ public class UIManager : MonoBehaviour
         PrepareDropdowns();
         UpdateSettingsDisplay();
     }
+    // Update is called once per frame
+    private void Update()
+    {
+        if (GameManager.instance.adminMenu.activeSelf)
+        {
+            if (RLManager.instance.isAgentInitialized)
+            {
+                resumeButton.SetActive(true);
+                saveButton.SetActive(true);
+            }
+            else
+            {
+                resumeButton.SetActive(false);
+                saveButton.SetActive(false);
+            }
+        }
+    }
+    #endregion
 
+    #region Dropdown UI
     private void PrepareDropdowns()
     {
         algos = Enum.GetNames(typeof(Settings.Algorithm)).ToList();
@@ -98,7 +119,9 @@ public class UIManager : MonoBehaviour
     {
         drop.AddOptions(actFun);
     }
+    #endregion
 
+    #region Set Activation Functions at Runtime
     public void ActivationFunctionsDisplayed()
     {
         int dqnActQty = RLManager.instance.settings.dqnNetStructure.Length - 1;
@@ -146,7 +169,6 @@ public class UIManager : MonoBehaviour
         }
         // Loop through arrays
     }
-
     public void SubmitActivationFunctions()
     {
         int dqnActQty = RLManager.instance.settings.dqnNetStructure.Length - 1;
@@ -172,23 +194,14 @@ public class UIManager : MonoBehaviour
 
         activationFunctionMenu.SetActive(false);
     }
-    // Update is called once per frame
-    private void Update()
+    public void OpenActivationFunctionMenu()
     {
-        if(GameManager.instance.adminMenu.activeSelf)
-        {
-            if (RLManager.instance.isAgentInitialized)
-            {
-                resumeButton.SetActive(true);
-                saveButton.SetActive(true);
-            }
-            else
-            {
-                resumeButton.SetActive(false);
-                saveButton.SetActive(false);
-            }
-        }
+        activationFunctionMenu.SetActive(true);
+        ActivationFunctionsDisplayed();
     }
+    #endregion
+
+    #region Update Menu Display Settings and Neural Network Structure
     public void UpdateSettingsDisplay()
     {
         maxEpsisodeIpt.text = RLManager.instance.settings.episodeMax.ToString();
@@ -230,12 +243,6 @@ public class UIManager : MonoBehaviour
         actorOutputipt.text = RLManager.instance.settings.actorNetStructure[RLManager.instance.settings.actorNetStructure.Length - 1].ToString();
         criticInputipt.text = RLManager.instance.settings.dqnNetStructure[0].ToString();
     }
-
-    public void OpenActivationFunctionMenu()
-    {
-        activationFunctionMenu.SetActive(true);
-        ActivationFunctionsDisplayed();
-    }
     public void UpdateNetworkStructureDisplay()
     {
         string dqnStructString = "";
@@ -257,14 +264,9 @@ public class UIManager : MonoBehaviour
         actorStructureDisplay.text = actorStructString;
         criticStructureDisplay.text = criticStructString;
     }
-    public void UpdateSaveLocation()
-    {
-        RLManager.instance.settings.saveLocation = saveLocationipt.text;
-        if (RLManager.instance.settings.saveLocation == "")
-        {
-            RLManager.instance.settings.saveLocation = Application.persistentDataPath;
-        }
-    }   
+    #endregion
+
+    #region DDQN Update Neural Network Structure at Runtime
     public void UpdateDQNInputs()
     {
         RLManager.instance.settings.dqnNetStructure[0] = int.Parse(dqnInputipt.text);
@@ -328,6 +330,9 @@ public class UIManager : MonoBehaviour
         }
         UpdateNetworkStructureDisplay();
     }
+    #endregion
+
+    #region PPO Update Neural Network Structure at Runtime
     public void UpdateActorInputs()
     {
         RLManager.instance.settings.actorNetStructure[0] = int.Parse(actorInputipt.text);
@@ -449,6 +454,9 @@ public class UIManager : MonoBehaviour
         }
         UpdateNetworkStructureDisplay();
     }
+    #endregion
+
+    #region Update UI Methods
     public void UpdateAgentName()
     {
         RLManager.instance.settings.agentName = fileIpt.text;
@@ -578,6 +586,9 @@ public class UIManager : MonoBehaviour
             RLManager.instance.settings.algo = Settings.Algorithm.Double_DQN;
         }
     }
+    #endregion
+
+    #region Update HUD
     public void UpdateHUD()
     {
         episodeNumber.text = rlComponent.episodeNum.ToString();
@@ -599,6 +610,17 @@ public class UIManager : MonoBehaviour
     {
         // Episode number - 1 is required since episode advances before average is calculated
         episodeAverage.text = (totalReward / (episodeNumber - 1)).ToString();
+    }
+    #endregion
+
+    #region Start New, Resume, Save and Load Methods
+    public void UpdateSaveLocation()
+    {
+        RLManager.instance.settings.saveLocation = saveLocationipt.text;
+        if (RLManager.instance.settings.saveLocation == "")
+        {
+            RLManager.instance.settings.saveLocation = Application.persistentDataPath;
+        }
     }
     public void ResumeGame()
     {
@@ -675,4 +697,5 @@ public class UIManager : MonoBehaviour
             GameManager.instance.gameState = "continue";
         }
     }
+    #endregion
 }

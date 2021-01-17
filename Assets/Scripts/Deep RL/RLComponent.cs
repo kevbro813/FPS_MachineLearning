@@ -8,6 +8,7 @@ using System.Reflection;
 [Serializable]
 public class RLComponent : MonoBehaviour
 {
+    #region Variables
     [Header("Neural Networks")]
     public NeuralNetwork mainNet;
     public NeuralNetwork targetNet;
@@ -75,7 +76,9 @@ public class RLComponent : MonoBehaviour
     private Color white;
 
     public Settings.Algorithm algo; // The RL algorithm being used
+    #endregion
 
+    #region Start/Update Methods
     private void Start()
     {
         tf = GetComponent<Transform>();
@@ -96,6 +99,9 @@ public class RLComponent : MonoBehaviour
                 mat.color = white;
         }
     }
+    #endregion
+
+    #region Double DQN Initialization
     /// <summary>
     /// Initialize new Double DQN Session
     /// </summary>
@@ -109,24 +115,6 @@ public class RLComponent : MonoBehaviour
         Init_DoubleDQN_Nets(dqnNetStruct); // Initialize main and target neural networks (used with doubleDQN and *duelingDQN)
         Init_DoubleDQN_Learning(); // Initialize reinforcement learning components, i.e. agent, environment and DQN (or doubleDQN)
         Init_Training_Variables(); // Initialize variables as starting values
-    }
-    /// <summary>
-    /// Initialize new PPO session
-    /// </summary>
-    /// <param name="isNeuralNetworkNew"></param>
-    /// <param name="isTrainingSession"></param>
-    /// <param name="actorNetStruct"></param>
-    /// <param name="criticNetStruct"></param>
-    public void Init_New_PPO_Session(bool isNeuralNetworkNew, bool isTrainingSession, int[] actorNetStruct, int[] criticNetStruct)
-    {
-        isNetworkNew = isNeuralNetworkNew; // Is this a new neural network or one being loaded
-        isTraining = isTrainingSession; // Is training activate? (If training is off, the agent will still operate but will not improve)
-        algo = Settings.Algorithm.Proximal_Policy_Optimization; // Use PPO
-        Init_Settings(); // Initialize settings from those stored in GameManager.settings (settings stored in game manager to make it easier to save)
-        Init_PPO_Nets(actorNetStruct, criticNetStruct); // Initialize main and target neural networks (used with doubleDQN and *duelingDQN)
-        Init_PPO_Learning(); // Initialize reinforcement learning components, i.e. agent, environment and DQN (or doubleDQN)
-        Init_Training_Variables(); // Initialize variables as starting values
-
     }
     /// <summary>
     /// Initialize Double DQN Neural networks. Creates a mainNet with random weights and biases, then copies and sets the targetNet with the same weights and biases.
@@ -149,6 +137,41 @@ public class RLComponent : MonoBehaviour
         CopyNetwork(); // Set target network to main network values
     }
     /// <summary>
+    /// Initialize agent, environment and Double DQN classes for DDQN learning.
+    /// </summary>
+    private void Init_DoubleDQN_Learning()
+    {
+        agent = new Agent();
+        agent.Init_Agent(GetComponent<AIPawn>(), this, actionQty); // Initialize agent variables
+
+        env = new Environment();
+        env.Init_Env(GetComponent<Transform>(), this); // Initialize environment variables
+
+        doubleDQN = new DoubleDQN();
+        doubleDQN.Init_Double_DQN(actionQty, env, agent, mainNet, targetNet); // Initialize DDQN variables
+    }
+    #endregion
+
+    #region Proximal Policy Optimization Initialization
+    /// <summary>
+    /// Initialize new PPO session
+    /// </summary>
+    /// <param name="isNeuralNetworkNew"></param>
+    /// <param name="isTrainingSession"></param>
+    /// <param name="actorNetStruct"></param>
+    /// <param name="criticNetStruct"></param>
+    public void Init_New_PPO_Session(bool isNeuralNetworkNew, bool isTrainingSession, int[] actorNetStruct, int[] criticNetStruct)
+    {
+        isNetworkNew = isNeuralNetworkNew; // Is this a new neural network or one being loaded
+        isTraining = isTrainingSession; // Is training activate? (If training is off, the agent will still operate but will not improve)
+        algo = Settings.Algorithm.Proximal_Policy_Optimization; // Use PPO
+        Init_Settings(); // Initialize settings from those stored in GameManager.settings (settings stored in game manager to make it easier to save)
+        Init_PPO_Nets(actorNetStruct, criticNetStruct); // Initialize main and target neural networks (used with doubleDQN and *duelingDQN)
+        Init_PPO_Learning(); // Initialize reinforcement learning components, i.e. agent, environment and DQN (or doubleDQN)
+        Init_Training_Variables(); // Initialize variables as starting values
+
+    }
+    /// <summary>
     /// Initialize PPO Neural networks. Create two unique networks for actor and critic.
     /// </summary>
     /// <param name="actorNetStructure"></param>
@@ -169,6 +192,23 @@ public class RLComponent : MonoBehaviour
             criticNet = new NeuralNetwork(criticLayers, false);
         }
     }
+    /// <summary>
+    /// Initialize agent, environment and PPO classes for PPO learning.
+    /// </summary>
+    private void Init_PPO_Learning()
+    {
+        agent = new Agent();
+        agent.Init_Agent(GetComponent<AIPawn>(), this, actionQty); // Initialize agent variables
+
+        env = new Environment();
+        env.Init_Env(GetComponent<Transform>(), this); // Initialize environment variables
+
+        ppo = new PPO();
+        ppo.Init_PPO(actionQty, env, agent, actorNet, criticNet); // Initialize DDQN variables
+    }
+    #endregion
+
+    #region Universal Initialization
     /// <summary>
     /// Initialize variables to starting values.
     /// </summary>
@@ -209,34 +249,9 @@ public class RLComponent : MonoBehaviour
             RLManager.instance.settings.expBufferSize = episodeMaxSteps - framesPerState + 1; // Experience buffer does not start until there are enough frames, thus subtracting framesPerState and adding 1
         }
     }
-    /// <summary>
-    /// Initialize agent, environment and Double DQN classes for DDQN learning.
-    /// </summary>
-    private void Init_DoubleDQN_Learning()
-    {
-        agent = new Agent();
-        agent.Init_Agent(GetComponent<AIPawn>(), this, actionQty); // Initialize agent variables
+    #endregion
 
-        env = new Environment();
-        env.Init_Env(GetComponent<Transform>(), this); // Initialize environment variables
-
-        doubleDQN = new DoubleDQN();
-        doubleDQN.Init_Double_DQN(actionQty, env, agent, mainNet, targetNet); // Initialize DDQN variables
-    }
-    /// <summary>
-    /// Initialize agent, environment and PPO classes for PPO learning.
-    /// </summary>
-    private void Init_PPO_Learning()
-    {
-        agent = new Agent();
-        agent.Init_Agent(GetComponent<AIPawn>(), this, actionQty); // Initialize agent variables
-
-        env = new Environment();
-        env.Init_Env(GetComponent<Transform>(), this); // Initialize environment variables
-
-        ppo = new PPO();
-        ppo.Init_PPO(actionQty, env, agent, actorNet, criticNet); // Initialize DDQN variables
-    }
+    #region Universal Session/Episode Loops
     /// <summary>
     /// Runs a full training session
     /// </summary>
@@ -277,6 +292,9 @@ public class RLComponent : MonoBehaviour
             isDone = false; // Reset the done flag to false
         }
     }
+    #endregion
+
+    #region Double DQN Main Loop
     /// <summary>
     /// Runs one epoch/step of Double DQN algorithm.
     /// </summary>
@@ -306,6 +324,64 @@ public class RLComponent : MonoBehaviour
 
         NewEpisodeCheck(); // Check if episode is finished
     }
+    /// <summary>
+    /// Double DQN - Updates counters and HUD and checks for done flag each step.
+    /// </summary>
+    private void DDQNStep()
+    {
+        epochs++; // Increment total steps
+        epiSteps++; // Increment steps in episode
+
+        // Copy weights from main to target network periodically
+        if (epochs % netCopyRate == 0)
+            CopyNetwork();
+
+        // Update HUD display
+        if (!GameManager.instance.adminMenu.activeSelf)
+        {
+            GameManager.instance.ui.UpdateHUD();
+        }
+        DoneCheck();
+    }
+    /// <summary>
+    /// Double DQN training runs every "X" episodes
+    /// </summary>
+    private void DDQNTraining()
+    {
+        if (isTraining == true) // Train the agent
+        {
+            if (epochs % 4 == 0) // Run training every 4 steps TODO: Add to settings
+                cost = doubleDQN.Train();
+        }
+    }
+    /// <summary>
+    /// Runs experience replay for DDQN which stores data for training.
+    /// </summary>
+    /// <param name="index"></param>
+    /// <param name="action"></param>
+    /// <param name="reward"></param>
+    /// <param name="done"></param>
+    private void ExperienceReplay(int index, int action, double reward, bool done)
+    {
+        // Check that a state is ready, AKA there are enough frames to create a state
+        if (!isStateReady)
+        {
+            framesFirstState++;
+            if (framesFirstState >= framesPerState)
+            {
+                isStateReady = true;
+            }
+        }
+        if (isStateReady) // If the state is ready
+        {
+            // Update experience replay memory
+            agent.ExperienceReplay(index, action, reward, done);
+            agent.UpdateExperienceBufferCounters(); // Update bufferIndex and bufferCount variables
+        }
+    }
+    #endregion
+
+    #region PPO Main Loop
     /// <summary>
     /// Runs one epoch/step of the PPO algorithm. However, note that training happens after the episode since Advantage calculation requires iterating in reverse
     /// through each epoch of data.
@@ -357,84 +433,6 @@ public class RLComponent : MonoBehaviour
         DoneCheck();
     }
     /// <summary>
-    /// Double DQN - Updates counters and HUD and checks for done flag each step.
-    /// </summary>
-    private void DDQNStep()
-    {
-        epochs++; // Increment total steps
-        epiSteps++; // Increment steps in episode
-
-        // Copy weights from main to target network periodically
-        if (epochs % netCopyRate == 0)
-            CopyNetwork();
-
-        // Update HUD display
-        if (!GameManager.instance.adminMenu.activeSelf)
-        {
-            GameManager.instance.ui.UpdateHUD();
-        }
-        DoneCheck();
-    }
-    /// <summary>
-    /// Calculates epsilon each epoch.
-    /// </summary>
-    private void Epsilon()
-    {
-        epsilon = Mathf.Max(epsilon - epsilonDecay, epsilonMin);
-        RLManager.instance.settings.epsilon = epsilon;
-    }
-    /// <summary>
-    /// Double DQN training runs every "X" episodes
-    /// </summary>
-    private void DDQNTraining()
-    {
-        if (isTraining == true) // Train the agent
-        {
-            if (epochs % 4 == 0) // Run training every 4 steps TODO: Add to settings
-                cost = doubleDQN.Train();
-        }
-    }
-    /// <summary>
-    /// Calculate the reward for the current epoch and update the episode reward and total reward. This returns the reward to be stored in experience buffer.
-    /// </summary>
-    /// <returns></returns>
-    private double Reward()
-    {
-        // Calculates the reward based on the state
-        double reward = env.CalculateReward();
-
-        // Add current reward to the episode and total reward
-        episodeReward += reward;
-        totalReward += reward;
-
-        return reward;
-    }
-    /// <summary>
-    /// Runs experience replay for DDQN which stores data for training.
-    /// </summary>
-    /// <param name="index"></param>
-    /// <param name="action"></param>
-    /// <param name="reward"></param>
-    /// <param name="done"></param>
-    private void ExperienceReplay(int index, int action, double reward, bool done)
-    {
-        // Check that a state is ready, AKA there are enough frames to create a state
-        if (!isStateReady)
-        {
-            framesFirstState++;
-            if (framesFirstState >= framesPerState)
-            {
-                isStateReady = true;
-            }
-        }
-        if (isStateReady) // If the state is ready
-        {
-            // Update experience replay memory
-            agent.ExperienceReplay(index, action, reward, done);
-            agent.UpdateExperienceBufferCounters(); // Update bufferIndex and bufferCount variables
-        }
-    }
-    /// <summary>
     /// Run experience replay for PPO. This stores data for training that takes place at the end of the episode.
     /// </summary>
     /// <param name="action"></param>
@@ -461,6 +459,32 @@ public class RLComponent : MonoBehaviour
             agent.PPOExperience(action, reward, prediction, value, done);
             agent.UpdateExperienceBufferCounters(); // Update bufferIndex and bufferCount variables
         }
+    }
+    #endregion
+
+    #region General Methods
+    /// <summary>
+    /// Calculate the reward for the current epoch and update the episode reward and total reward. This returns the reward to be stored in experience buffer.
+    /// </summary>
+    /// <returns></returns>
+    private double Reward()
+    {
+        // Calculates the reward based on the state
+        double reward = env.CalculateReward();
+
+        // Add current reward to the episode and total reward
+        episodeReward += reward;
+        totalReward += reward;
+
+        return reward;
+    }
+    /// <summary>
+    /// Calculates epsilon each epoch.
+    /// </summary>
+    private void Epsilon()
+    {
+        epsilon = Mathf.Max(epsilon - epsilonDecay, epsilonMin);
+        RLManager.instance.settings.epsilon = epsilon;
     }
     /// <summary>
     /// Check if the episode is done and set the done flag to true.
@@ -546,4 +570,5 @@ public class RLComponent : MonoBehaviour
             isSaved = true; // Indicate the network and settings are saved
         }
     }
+    #endregion
 }

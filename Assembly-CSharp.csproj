@@ -81,7 +81,9 @@
     <Compile Include="Assets\Scripts\Game\Checkpoint.cs" />
     <Compile Include="Assets\Scripts\Game\GameManager.cs" />
     <Compile Include="Assets\Scripts\Game\Objective.cs" />
+    <Compile Include="Assets\Scripts\Game\Projectile.cs" />
     <Compile Include="Assets\Scripts\Game\RandomObjective.cs" />
+    <Compile Include="Assets\Scripts\Game\Turret.cs" />
     <Compile Include="Assets\Scripts\Observer\ObserverController.cs" />
     <Compile Include="Assets\Scripts\Tester.cs" />
     <Reference Include="Unity.Timeline.Editor">

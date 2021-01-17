@@ -4,6 +4,7 @@ using UnityEngine;
 [Serializable]
 public class MathFunctions
 {
+    #region Activation Functions
     // Activation Functions
     public double Relu(double value) // Rectified Linear Units
     {
@@ -41,6 +42,9 @@ public class MathFunctions
 
         return softAction; // Return array with softmax outputs
     }
+    #endregion
+
+    #region Activation Function Derivatives
     // Activation Function Derivatives
     public double ReluDerivative(double value) // Rectified Linear Unit Derivative
     {
@@ -66,7 +70,9 @@ public class MathFunctions
          this is the same as value - 0.*/
         return value - 1; 
     }
+    #endregion
 
+    #region Max Functions
     /// <summary>
     ///  Returns index of max action value
     /// </summary>
@@ -99,21 +105,6 @@ public class MathFunctions
         return maxAct;
     }
     /// <summary>
-    /// Returns the mean of an array of values
-    /// </summary>
-    /// <param name="values"></param>
-    /// <returns></returns>
-    public double Mean(double[] values)
-    {
-        double total = 0; // Variable to hold total loss, used to average
-
-        // Calculate average the losses for each action
-        for (int i = 0; i < values.Length; i++)
-            total += values[i]; // Calculate total
-
-        return total / values.Length; // Return average
-    }
-    /// <summary>
     /// Returns the strongest action, the rest will be set to 0. Used for selected_Actions and QValues
     /// </summary>
     /// <param name="action"></param>
@@ -139,6 +130,9 @@ public class MathFunctions
         }
         return sAction;
     }
+    #endregion
+
+    #region OneHot Encoding
     /// <summary>
     /// Multiply actions by a one hot encoded vector. This sets all actions to zero, except the greatest action which retains its value.
     /// </summary>
@@ -182,6 +176,9 @@ public class MathFunctions
         }
         return oneHotActions;
     }
+    #endregion
+
+    #region Log Probabilities
     /// <summary>
     /// Calculate the negative of the log probabilities
     /// </summary>
@@ -192,10 +189,13 @@ public class MathFunctions
         double[] LogProbs = new double[probs.Length];
 
         for (int i = 0; i < probs.Length; i++)
-            LogProbs[i] = -1 * Math.Log(probs[i]); // Not to be confused with Log(1/prob)
+            LogProbs[i] = -1 * Math.Log(probs[i]); // Not to be confused with Log(1/prob) which is also referred to as the negative log, this is probably better described as the negative of the log probability
 
         return LogProbs;
     }
+    #endregion
+
+    #region Normalization, Variance, Mean and Standard Deviation Functions
     /// <summary>
     /// Normalizes a set of data using x = (x - mean(x)) / stdDev(x)
     /// </summary>
@@ -255,6 +255,21 @@ public class MathFunctions
         return stdDev;
     }
     /// <summary>
+    /// Returns the mean of an array of values
+    /// </summary>
+    /// <param name="values"></param>
+    /// <returns></returns>
+    public double Mean(double[] values)
+    {
+        double total = 0; // Variable to hold total loss, used to average
+
+        // Calculate average the losses for each action
+        for (int i = 0; i < values.Length; i++)
+            total += values[i]; // Calculate total
+
+        return total / values.Length; // Return average
+    }
+    /// <summary>
     /// Recalculates the mean by including the newest datapoint.
     /// </summary>
     /// <param name="sampleSize"></param>
@@ -287,4 +302,5 @@ public class MathFunctions
         double zScore = (dp - mean) / (stdDev + 1e-10);
         return zScore;
     }
+    #endregion
 }

@@ -204,7 +204,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 112
-  m_CollisionDetection: 1
+  m_CollisionDetection: 3
 --- !u!114 &1260667856558689984
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219,23 +219,58 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainNet:
     layers: []
+    frameMeans: []
+    zScores: []
+    totalSqrdDiff: []
+    sampleSize: 0
   targetNet:
     layers: []
+    frameMeans: []
+    zScores: []
+    totalSqrdDiff: []
+    sampleSize: 0
   actorNet:
     layers: []
+    frameMeans: []
+    zScores: []
+    totalSqrdDiff: []
+    sampleSize: 0
   criticNet:
     layers: []
-  layers: 
+    frameMeans: []
+    zScores: []
+    totalSqrdDiff: []
+    sampleSize: 0
+  dqnLayers: 
   actorLayers: 
   criticLayers: 
   ppo:
-    actorLoss: 0
-    criticLoss: 0
+    ppoClip: 0
+    actionQty: 0
+    clipMinimum: 0
+    clipMaximum: 0
+    entropyBonus: 0
+    gamma: 0
+    tau: 0
+    delta: 0
+    trainingEpochs: 0
+    lastGAE: 0
+    batchSize: 0
     rewards: []
+    actions: 
     values: []
     dones: 
-    actorTargets: []
-    updateSteps: 10
+    advantages: []
+    newLogProbs: []
+    oldLogProbs: []
+    ratios: []
+    p1: []
+    p2: []
+    actorError: []
+    returns: []
+    oneHotActions: 
+    actorLoss: 0
+    criticLoss: 0
   env:
     distancesToObstacles: []
     targetDistance: 0
@@ -243,13 +278,17 @@ MonoBehaviour:
     fbIndex: 0
     fbCount: 0
     isOnObjective: 0
+    isHitByProjectile: 0
+    isAtCheckpoint: 0
     frameBufferSize: 0
     framesPerState: 0
+    currentCheckpointReward: 0
+    zObjDist: 0
+    xObjDist: 0
   agent:
     bufferIndex: 0
     bufferCount: 0
     isExploit: 0
-    actionQty: 0
   epochs: 0
   epiSteps: 0
   episodeNum: 0

@@ -7,6 +7,7 @@ using UnityEngine;
 [Serializable]
 public class NeuralNetwork
 {
+    #region Variables
     private int[] neuralNetStructure; // Contains the number of neurons in each layer
     public Layer[] layers;
 
@@ -14,6 +15,9 @@ public class NeuralNetwork
     public double[] zScores;
     public double[] totalSqrdDiff;
     public int sampleSize;
+    #endregion
+
+    #region Neural Network Constructor and Initialization
     /// <summary>
     /// Neural Network Constructor for DQN.
     /// </summary>
@@ -62,6 +66,9 @@ public class NeuralNetwork
         zScores = new double[inputsPerState];
         totalSqrdDiff = new double[inputsPerState];
     }
+    #endregion
+
+    #region FeedForward Net
     /// <summary>
     /// Forward pass of data through the neural network.
     /// </summary>
@@ -69,8 +76,8 @@ public class NeuralNetwork
     /// <returns></returns>
     public double[] FeedForward(double[] inputs)
     {
-        //layers[0].FeedForward(NormalizeState(inputs, layers[0].inputs.Length)); // Feed forward inputs through the first hidden layer
-        layers[0].FeedForward(inputs);
+        //layers[0].FeedForward(NormalizeState(inputs, layers[0].inputs.Length)); 
+        layers[0].FeedForward(inputs); // Feed forward inputs through the first hidden layer
 
         // Pass data through each hidden layer and end with output layer
         for (int i = 1; i < layers.Length; i++) 
@@ -78,6 +85,9 @@ public class NeuralNetwork
 
         return layers[layers.Length - 1].outputs; // Return the output layer
     }
+    #endregion
+
+    #region Backpropagation Net
     /// <summary>
     /// Backpropagation with only the targets as a parameter is used with DQN networks.
     /// Backpropagation will improve the neural network by adjusting the weights and biases.
@@ -118,6 +128,9 @@ public class NeuralNetwork
         for (int i = 0; i < layers.Length; i++) // Loop through each layer and optimize
             layers[i].Optimize();
     }
+    #endregion
+
+    #region Normalize State Inputs
     /// <summary>
     /// This method will normalize the inputs passed into the feed forward net. Uses sample mean.
     /// </summary>
@@ -141,13 +154,16 @@ public class NeuralNetwork
 
         return zScores;
     }
+    #endregion
 }
+
 /// <summary>
 /// Layer class is initialized for each layer of a neural network Hidden/Output (does not include the Input layer).
 /// </summary>
 [Serializable]
 public class Layer
 {
+    #region Neural Network Layer Variables
     private int inputQty; // Number of inputs to the layer
     private int outputQty; // Number of outputs from the layer
     public double[] outputs; // Array to store outputs (After activation function)
@@ -171,7 +187,9 @@ public class Layer
     private double currentLearningRate; // Current learning rate calculated using Adam Optimizer
 
     public Settings.LayerActivations activation; // The activation function used on the current layer
+    #endregion
 
+    #region Layer Constructor and Initialization Methods
     /// <summary>
     /// Layer constructor for PPO algorithm (actor/critic)
     /// </summary>
@@ -268,6 +286,9 @@ public class Layer
                 weights[i][j] = (double)UnityEngine.Random.Range(-0.5f, 0.5f); // Set a random weight
         }
     }
+    #endregion
+
+    #region FeedForward Layer
     /// <summary>
     /// Feed forward the input data through the layer and return outputs.
     /// </summary>
@@ -293,6 +314,9 @@ public class Layer
 
         return outputs;
     }
+    #endregion
+
+    #region Backpropagation Layer
     /// <summary>
     /// DQN backpropagation. Takes an array of targets as a parameter (The size of the target array should = actionQty).
     /// </summary>
@@ -414,7 +438,9 @@ public class Layer
             biases[i] -= currentLearningRate * firstMomentBias[i] / (Math.Sqrt(secondMomentBias[i]) + epsilonHat); // Update biases using gradient descent
         }
     }
+    #endregion
 
+    #region Activation Functions and Derivatives
     /// <summary>
     /// This method will take a value, pass it through an activation function and return the output.
     /// </summary>
@@ -466,5 +492,6 @@ public class Layer
                 return RLManager.math.ReluDerivative(value);
         }
     }
+    #endregion
 }
 

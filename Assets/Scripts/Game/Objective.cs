@@ -7,26 +7,27 @@ public class Objective : MonoBehaviour
     {
         randObj = GetComponent<RandomObjective>();
     }
-    //private void OnTriggerEnter(Collider col)
-    //{
-    //    if (col.gameObject.CompareTag("Agent"))
-    //    {
-    //        col.GetComponent<RLComponent>().env.isOnObjective = true;
-    //    }
-    //}
-    //private void OnTriggerExit(Collider col)
-    //{
-    //    if (col.gameObject.CompareTag("Agent"))
-    //    {
-    //        col.GetComponent<RLComponent>().env.isOnObjective = false;
-    //    }
-    //}
-    private void OnTriggerStay(Collider col) // TODO: RANDOM OBJECTIVE
+
+    private void OnTriggerEnter(Collider col)
     {
         if (col.gameObject.CompareTag("Agent"))
         {
             col.GetComponent<RLComponent>().env.isOnObjective = true;
-            randObj.RandomLocation();
         }
     }
+    private void OnTriggerExit(Collider col)
+    {
+        if (col.gameObject.CompareTag("Agent"))
+        {
+            col.GetComponent<RLComponent>().env.isOnObjective = false;
+        }
+    }
+    //private void OnTriggerStay(Collider col) // TODO: RANDOM OBJECTIVE
+    //{
+    //    if (col.gameObject.CompareTag("Agent"))
+    //    {
+    //        col.GetComponent<RLComponent>().env.isOnObjective = true;
+    //        randObj.RandomLocation();
+    //    }
+    //}
 }

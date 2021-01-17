@@ -4,6 +4,7 @@ using System;
 [Serializable]
 public class Environment
 {
+    #region Variables
     private RLComponent rlComponent;
     private Transform tf;
     private RaycastHit[] hit;
@@ -15,6 +16,7 @@ public class Environment
     public int fbIndex; // Frame buffer index used to fill the fb
     public int fbCount; // Frame buffer count used to track the size of the fb
     public bool isOnObjective = false; // If true, the agent will be rewarded as long as they are on the objective
+    public bool isHitByProjectile = false;
     public bool isAtCheckpoint = false; // If true, agent will be rewarded one time
     public int frameBufferSize; // Size of the frame buffer, AKA maximum number of frames that can be stored at any time
     public int framesPerState; // Number of frames in a state
@@ -26,7 +28,10 @@ public class Environment
     //public double[] nextFrame; // Create a float array to hold the next frame
     public float zObjDist;
     public float xObjDist;
+    private Turret turret;
+    #endregion
 
+    #region Initialization
     /// <summary>
     /// Initialize a new environment.
     /// </summary>
@@ -47,18 +52,23 @@ public class Environment
         inputsPerState = rlComponent.inputsPerState;
         collisionDetectRange = RLManager.instance.settings.collisionDetectRange;
         frameBuffer = new double[frameBufferSize][];
+        turret = GameObject.FindWithTag("Turret").GetComponent<Turret>();
     }
+    #endregion
+
+    #region Reward Method
     /// <summary>
     /// Calculates the reward. This can be changed to reinforce behaviors.
     /// </summary>
     /// <returns></returns>
     public double CalculateReward()
-    { double reward = 0;
+    { 
+        double reward = 0;
 
         if (isOnObjective)
         {
             reward += 10;
-            isOnObjective = false;
+            //isOnObjective = false;
         }
         else
         {
@@ -81,6 +91,13 @@ public class Environment
             //    reward += xObjDist;
             //}
         }
+
+        if (isHitByProjectile)
+        {
+            reward -= 1000;
+            isHitByProjectile = false;
+        }
+
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
             if (distancesToObstacles[i] < 1)
@@ -93,6 +110,9 @@ public class Environment
 
         return reward;
     }
+    #endregion
+
+    #region Frame Buffer and State Methods
     /// <summary>
     /// Get the next frame which is one epochs worth of data, can be raycasts, Vector3 positions, health, etc.
     /// This method needs to be changed to collect the right inputs for the game.
@@ -118,14 +138,23 @@ public class Environment
         nextFrame[7] = distancesToObstacles[5];
         nextFrame[8] = distancesToObstacles[6];
         nextFrame[9] = distancesToObstacles[7];
+
+        if (turret.projectile_tf)
+        {
+            nextFrame[10] = turret.projectile_tf.position.z - tf.position.z;
+            nextFrame[11] = turret.projectile_tf.position.x - tf.position.x;
+        }
+        else
+        {
+            nextFrame[10] = 0;
+            nextFrame[11] = 0;
+        }
         //nextFrame[10] = tf.position.z;
         //nextFrame[11] = tf.position.x;
         //nextFrame[12] = tf.transform.eulerAngles.y;
 
         return nextFrame; // Return nextFrame
     }
-
-
     /// <summary>
     /// Update the frame buffer by removing the oldest frame and appending the next frame
     /// </summary>
@@ -190,7 +219,9 @@ public class Environment
         }
         return flatState; // Return the current state
     }
+    #endregion
 
+    #region Input Methods (Used to provide input data for the neural network)
     /// <summary>
     /// Collision Detection Algorithm
     /// </summary>
@@ -219,48 +250,11 @@ public class Environment
                 if (hit[hitDir].collider.CompareTag("Obstacle"))
                 {
                     // Check if the obstacle is within the collision detection range
-                    if (distanceToHit <= collisionDetectRange)
-                    {
-                        distancesToObstacles[hitDir] = distanceToHit; // Set the distance to the hit object in the distancesToObjects array
-                    }
+                    if (distanceToHit <= collisionDetectRange) distancesToObstacles[hitDir] = distanceToHit; // Set the distance to the hit object in the distancesToObjects array
                 }
             }
-            else
-            {
-                distancesToObstacles[hitDir] = collisionDetectRange; // If no object is hit by raycast, then set distancesToObstacles to max
-            }
+            else distancesToObstacles[hitDir] = collisionDetectRange; // If no object is hit by raycast, then set distancesToObstacles to max
         }
     }
-    /// <summary>
-    /// AI Vision is limited to field of view and max view distance
-    /// </summary>
-    /// <param name="vectorToTarget"></param>
-    /// <param name="ttf"></param>
-    private void AIVision(Vector3 vectorToTarget, Transform ttf)
-    {
-        // Find the distance between the two vectors in float to compare with maxViewDistance
-        targetDistance = Vector3.Distance(ttf.position, tf.position);
-
-        // Find the angle between the direction our agent is facing (forward in local space) and the vector to the target.
-        float angleToTarget = Vector3.Angle(vectorToTarget, tf.forward);
-
-        if (angleToTarget < RLManager.instance.settings.fieldOfView && targetDistance < RLManager.instance.settings.maxViewDistance)
-        {
-            int obstacleLayer = LayerMask.NameToLayer("Obstacle");             // Add Walls layer to variable
-            int objectiveLayer = LayerMask.NameToLayer("Objective");           // Add Player layer to variable
-            int layerMask = (1 << obstacleLayer) | (1 << objectiveLayer);      // Create layermask
-
-            RaycastHit hit;
-
-            // Raycast to detect objective within field of view with max view distance as a limit
-            if (Physics.Raycast(tf.position, vectorToTarget, out hit, RLManager.instance.settings.maxViewDistance, layerMask))
-            {
-                if (hit.collider.CompareTag("Objective"))
-                {
-                    // boolean to indicate objective is sighted (state input)
-                    // angleToTarget (state input)
-                }
-            }
-        }
-    }
+    #endregion
 }

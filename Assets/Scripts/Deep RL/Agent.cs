@@ -5,6 +5,7 @@ using UnityEditor;
 [Serializable]
 public class Agent
 {
+    #region Variables
     private AIPawn aiPawn;
     private RLComponent rlComponent;
     private int expBufferSize; // Size of the experience buffer
@@ -14,7 +15,9 @@ public class Agent
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
     public bool isExploit = true; // Is the agent's action explore or exploit (will change the color of the agent to red if exploit and white if explore)
+    #endregion
 
+    #region Initialization
     /// <summary>
     /// Converts date to an int that can be used as the seed for RNG
     /// </summary>
@@ -43,6 +46,9 @@ public class Agent
         bufferCount = 0;
         actionQty = actQty;
     }
+    #endregion
+
+    #region Double DQN
     /// <summary>
     /// Performs an action based on inputs from a boolean array, then returns the action's index to be stored in the experience buffer.
     /// </summary>
@@ -57,85 +63,6 @@ public class Agent
         PerformAction(action); // Accept action outputs and apply them to respective pawn functions
 
         return action; // Return the index of the action taken
-    }
-    /// <summary>
-    /// This method takes a softmax distribution and calculates an action based on the distribution and performs the action. It then returns the index of the action taken.
-    /// </summary>
-    /// <param name="dist"></param>
-    /// <returns></returns>
-    public int PPOAction(double[] dist)
-    {
-        int action = PPORandomAction(dist); // choose a random action based on the prediction probabilities random.choice(actionQty, prediction)
-
-        PerformAction(action); // Accept action outputs and apply them to respective pawn functions
-
-        return action; // Return the index of the action taken
-    }
-    /// <summary>
-    /// Determines an action randomly, based on the softmax distribution (therefore it is not a normal distribution)
-    /// </summary>
-    /// <param name="distribution"></param>
-    /// <returns></returns>
-    private int PPORandomAction(double[] distribution)
-    {
-        double random = (double)UnityEngine.Random.Range(0f, 1f); // Random variable between 0 and 1
-        for (int i = 0; i < actionQty; i++)
-        {
-            if (random < distribution[i]) // If the random number is less than the softmax distribution return the index
-                return i; 
-            random -= distribution[i]; // Otherwise, subtract the random number by the distribution and move on to the next action
-        }
-
-        return -1; // This should only be returned if there is a problem with softmax, i.e. values do not add up exactly to 1
-    }
-    /// <summary>
-    /// Takes an integer representing the index of the action to be performed and performs the corresponding action.
-    /// </summary>
-    /// <param name="action"></param>
-    private void PerformAction(int action)
-    {
-        if (action == 0)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Idle");
-            }
-            aiPawn.NoMovement(true);
-        }
-        else if (action == 1)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Forward");
-            }
-            aiPawn.MoveForward(true);
-        }
-        else if (action == 2)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Back");
-            }
-            aiPawn.MoveBack(true);
-        }
-        if (action == 3)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Right");
-            }
-            aiPawn.MoveRight(true);
-        }
-        else if (action == 4)
-        {
-            if (isExploit)
-            {
-                Debug.Log("Left");
-            }
-            aiPawn.MoveLeft(true);
-        }
-        //aiPawn.RotateRight(bAction[4]);
-        //aiPawn.RotateLeft(bAction[5]);
     }
     /// <summary>
     /// Performs a random action or one determined by neural network. Epsilon is the percentage that the action is random and will decay over the training session to a minimum.
@@ -173,26 +100,6 @@ public class Agent
         experienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
     }
     /// <summary>
-    /// Stores the data required for PPO training.
-    /// </summary>
-    /// <param name="actions"></param>
-    /// <param name="rewards"></param>
-    /// <param name="predictions"></param>
-    /// <param name="values"></param>
-    /// <param name="dones"></param>
-    public void PPOExperience(int actions, double rewards, double[] predictions, double values, bool dones) 
-    {
-        double[] preds = new double[actionQty];
-        for (int i = 0; i < actionQty; i++)
-        {
-            preds[i] = predictions[i]; // This is needed to store the prediction values properly in the tuple
-        }
-        // Create a new tuple with the data passed in
-        Tuple<int, double, double[], double, bool> nTuple = new Tuple<int, double, double[], double, bool>(actions, rewards, preds, values, dones); 
-        
-        ppoExperienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
-    }
-    /// <summary>
     /// Update the bufferCount and bufferIndex variables.
     /// </summary>
     public void UpdateExperienceBufferCounters()
@@ -228,4 +135,100 @@ public class Agent
         }
         return miniBatch; // Return the completed mini-batch
     }
+    #endregion
+
+    #region Proximal Policy Optimization
+    /// <summary>
+    /// This method takes a softmax distribution and calculates an action based on the distribution and performs the action. It then returns the index of the action taken.
+    /// </summary>
+    /// <param name="dist"></param>
+    /// <returns></returns>
+    public int PPOAction(double[] dist)
+    {
+        int action = PPORandomAction(dist); // choose a random action based on the prediction probabilities random.choice(actionQty, prediction)
+
+        PerformAction(action); // Accept action outputs and apply them to respective pawn functions
+
+        return action; // Return the index of the action taken
+    }
+    /// <summary>
+    /// Determines an action randomly, based on the softmax distribution (therefore it is not a normal distribution)
+    /// </summary>
+    /// <param name="distribution"></param>
+    /// <returns></returns>
+    private int PPORandomAction(double[] distribution)
+    {
+        double random = (double)UnityEngine.Random.Range(0f, 1f); // Random variable between 0 and 1
+        for (int i = 0; i < actionQty; i++)
+        {
+            if (random < distribution[i]) // If the random number is less than the softmax distribution return the index
+                return i; 
+            random -= distribution[i]; // Otherwise, subtract the random number by the distribution and move on to the next action
+        }
+
+        return -1; // This should only be returned if there is a problem with softmax, i.e. values do not add up exactly to 1
+    }
+    /// <summary>
+    /// Stores the data required for PPO training.
+    /// </summary>
+    /// <param name="actions"></param>
+    /// <param name="rewards"></param>
+    /// <param name="predictions"></param>
+    /// <param name="values"></param>
+    /// <param name="dones"></param>
+    public void PPOExperience(int actions, double rewards, double[] predictions, double values, bool dones)
+    {
+        double[] preds = new double[actionQty];
+        for (int i = 0; i < actionQty; i++)
+        {
+            preds[i] = predictions[i]; // This is needed to store the prediction values properly in the tuple
+        }
+        // Create a new tuple with the data passed in
+        Tuple<int, double, double[], double, bool> nTuple = new Tuple<int, double, double[], double, bool>(actions, rewards, preds, values, dones);
+
+        ppoExperienceBuffer[bufferIndex] = nTuple; // Add the new tuple to the experienceBuffer
+    }
+    #endregion
+
+    #region Perform Action (Works with PPO and DDQN)
+    /// <summary>
+    /// Takes an integer representing the index of the action to be performed and performs the corresponding action.
+    /// </summary>
+    /// <param name="action"></param>
+    private void PerformAction(int action)
+    {
+        if (action == 0)
+        {
+            //if (isExploit) Debug.Log("Idle");
+            
+            aiPawn.NoMovement(true);
+        }
+        else if (action == 1)
+        {
+            //if (isExploit) Debug.Log("Forward");
+            
+            aiPawn.MoveForward(true);
+        }
+        else if (action == 2)
+        {
+            //if (isExploit) Debug.Log("Back");
+            
+            aiPawn.MoveBack(true);
+        }
+        if (action == 3)
+        {
+            //if (isExploit) Debug.Log("Right");
+            
+            aiPawn.MoveRight(true);
+        }
+        else if (action == 4)
+        {
+            //if (isExploit) Debug.Log("Left");
+
+            aiPawn.MoveLeft(true);
+        }
+        //aiPawn.RotateRight(bAction[4]);
+        //aiPawn.RotateLeft(bAction[5]);
+    }
+    #endregion
 }

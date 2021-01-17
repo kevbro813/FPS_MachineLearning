@@ -4,6 +4,7 @@ using UnityEngine;
 [Serializable]
 public class DoubleDQN
 {
+    #region Variables
     private Environment env;
     private Agent agent;
     private NeuralNetwork mainNet;
@@ -22,7 +23,9 @@ public class DoubleDQN
     private double[] qNextState; // Q values for the next state
     private double[] qNextStateTarget; // Q values for the next state target network
     private double[] targets; // Targets used for backpropagation
+    #endregion
 
+    #region Initialization
     /// <summary>
     /// Initialize the Double DQN algo.
     /// </summary>
@@ -54,6 +57,9 @@ public class DoubleDQN
         qNextStateTarget = new double[actionQty];
         targets = new double[actionQty];
     }
+    #endregion
+
+    #region DDQN Training
     /// <summary>
     /// This method is the main training algorithm.
     /// </summary>
@@ -119,24 +125,6 @@ public class DoubleDQN
         return targets;
     }
     /// <summary>
-    /// Calculate cost using Mean Squared Error.
-    /// </summary>
-    /// <param name="mainQs"></param>
-    /// <param name="targetQs"></param>
-    /// <returns></returns>
-    private double Cost(double[] mainQs, double[] targetQs)
-    {
-        double sum = 0;
-
-        for (int i = 0; i < actionQty; i++)
-        {
-            double error = targetQs[i] - mainQs[i]; // Calculate error
-            sum += (error * error); // Sum of error^2
-        }
-
-        return sum / actionQty; // Return the cost averaged across all actions
-    }
-    /// <summary>
     /// Unpacks a minibatch tuple into arrays.
     /// </summary>
     /// <param name="mb"></param>
@@ -155,4 +143,23 @@ public class DoubleDQN
             }
         }
     }
+    /// <summary>
+    /// Calculate cost using Mean Squared Error.
+    /// </summary>
+    /// <param name="mainQs"></param>
+    /// <param name="targetQs"></param>
+    /// <returns></returns>
+    private double Cost(double[] mainQs, double[] targetQs)
+    {
+        double sum = 0;
+
+        for (int i = 0; i < actionQty; i++)
+        {
+            double error = targetQs[i] - mainQs[i]; // Calculate error
+            sum += (error * error); // Sum of error^2
+        }
+
+        return sum / actionQty; // Return the cost averaged across all actions
+    }
+    #endregion
 }
