@@ -17,6 +17,7 @@ public class Environment
     public int fbCount; // Frame buffer count used to track the size of the fb
     public bool isOnObjective = false; // If true, the agent will be rewarded as long as they are on the objective
     public bool isHitByProjectile = false;
+    public bool doesProjectileMiss = false;
     public bool isAtCheckpoint = false; // If true, agent will be rewarded one time
     public int frameBufferSize; // Size of the frame buffer, AKA maximum number of frames that can be stored at any time
     public int framesPerState; // Number of frames in a state
@@ -58,55 +59,37 @@ public class Environment
 
     #region Reward Method
     /// <summary>
-    /// Calculates the reward. This can be changed to reinforce behaviors.
+    /// Calculates the reward. This can be changed to reinforce various behaviors.
     /// </summary>
     /// <returns></returns>
     public double CalculateReward()
     { 
         double reward = 0;
 
-        if (isOnObjective)
-        {
-            reward += 10;
-            //isOnObjective = false;
-        }
-        else
-        {
-            reward -= 1;
-            //if (zObjDist > 0)
-            //{
-            //    reward -= zObjDist;
-            //}
-            //else
-            //{
-            //    reward += zObjDist;
-            //}
+        if (isOnObjective) reward += 3;
+        else reward -= 1;
 
-            //if (xObjDist > 0)
-            //{
-            //    reward -= xObjDist;
-            //}
-            //else
-            //{
-            //    reward += xObjDist;
-            //}
-        }
-
-        if (isHitByProjectile)
-        {
-            reward -= 1000;
-            isHitByProjectile = false;
-        }
+        //bool isPenalized = false;
 
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
-            if (distancesToObstacles[i] < 1)
-            {
-                //reward -= (2 - distancesToObstacles[i]); // TODO: FIX THIS... Bool to indicate if a raycast hits a wall. If it is false and distanceToObstacles is 0, then it should set distanceToObstacles to max number to avoid confusion with points.
-                reward--;
-            }
+            bool isPenalized = distancesToObstacles[i] < 1;
+            if (isPenalized) reward -= 0.5f;
         }
-        //reward += currentCheckpointReward;
+
+        //if (isPenalized) reward -= 2;
+
+        if (isHitByProjectile)
+        {
+            reward -= 100;
+            isHitByProjectile = false;
+        }
+
+        if (doesProjectileMiss)
+        {
+            reward += 100;
+            doesProjectileMiss = false;
+        }
 
         return reward;
     }
@@ -114,22 +97,30 @@ public class Environment
 
     #region Frame Buffer and State Methods
     /// <summary>
-    /// Get the next frame which is one epochs worth of data, can be raycasts, Vector3 positions, health, etc.
+    /// Get the next frame which is one epochs worth of data, can be raycasts, Vector3 positions, health integer, etc.
     /// This method needs to be changed to collect the right inputs for the game.
     /// </summary>
     /// <returns></returns>
-    public double[] GetNextFrame()
+    public double[] GetNextFrame(int episodeStep)
     {
         CollisionDetection(); // CollisionDetection function will collect the distance to objects from the raycasts pointed in the 8 compass directions
 
         double[] nextFrame = new double[inputsPerFrame]; // Create a float array to hold the next frame
 
-        zObjDist = tf.position.z - RLManager.instance.objectiveLocation.z; // z distance to objective
-        xObjDist = tf.position.x - RLManager.instance.objectiveLocation.x; // x distance to objective
+        // Populate the next_Frame array with the values for each input
 
-        // Populate the next_Frame array with the respective values
-        nextFrame[0] = zObjDist;
-        nextFrame[1] = xObjDist;
+        if (turret.projectile_tf) // Z and X axes distance to projectile
+        {
+            nextFrame[0] = turret.projectile_tf.position.z - tf.position.z;
+            nextFrame[1] = turret.projectile_tf.position.x - tf.position.x;
+        }
+        else // Distance is zero when no projectile is detected
+        {
+            nextFrame[0] = 0;
+            nextFrame[1] = 0;
+        }
+
+        // Raycast sensor in 8 compass directions
         nextFrame[2] = distancesToObstacles[0];
         nextFrame[3] = distancesToObstacles[1];
         nextFrame[4] = distancesToObstacles[2];
@@ -139,16 +130,12 @@ public class Environment
         nextFrame[8] = distancesToObstacles[6];
         nextFrame[9] = distancesToObstacles[7];
 
-        if (turret.projectile_tf)
-        {
-            nextFrame[10] = turret.projectile_tf.position.z - tf.position.z;
-            nextFrame[11] = turret.projectile_tf.position.x - tf.position.x;
-        }
-        else
-        {
-            nextFrame[10] = 0;
-            nextFrame[11] = 0;
-        }
+        zObjDist = tf.position.z - RLManager.instance.objectiveLocation.z; // z distance to objective
+        xObjDist = tf.position.x - RLManager.instance.objectiveLocation.x; // x distance to objective
+        nextFrame[10] = zObjDist; // Z axis distance to objective
+        nextFrame[11] = xObjDist; // X axis distance to objective
+
+        //nextFrame[0] = episodeStep; // Time represented by ticks of the update method each episode, AKA episode epochs
         //nextFrame[10] = tf.position.z;
         //nextFrame[11] = tf.position.x;
         //nextFrame[12] = tf.transform.eulerAngles.y;

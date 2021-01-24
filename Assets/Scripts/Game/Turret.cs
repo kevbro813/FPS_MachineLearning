@@ -12,7 +12,7 @@ public class Turret : MonoBehaviour
     public float angleToTarget;
     public GameObject projectileObject;
     public Transform muzzle;
-    private float timerStart;
+    [HideInInspector] public float timerStart;
     private bool isReadyToFire;
     public float turretDelay;
     public float turretPower;
@@ -58,7 +58,7 @@ public class Turret : MonoBehaviour
 
                         projectile_tf = projectileClone.GetComponent<Transform>();
 
-                        Destroy(projectileClone, 3f);
+                        StartCoroutine(DestroyProjectile(projectileClone));
 
                         timerStart = Time.time;
                         isReadyToFire = false;
@@ -69,6 +69,12 @@ public class Turret : MonoBehaviour
 
     }
 
+    private IEnumerator DestroyProjectile(GameObject projectileClone)
+    {
+        yield return new WaitForSeconds(3f);
+        GameObject.FindWithTag("Agent").GetComponent<RLComponent>().env.doesProjectileMiss = false;
+        Destroy(projectileClone);
+    }
     private void ReadyCheck()
     {
         if (Time.time >= timerStart + turretDelay) isReadyToFire = true;

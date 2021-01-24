@@ -23,7 +23,7 @@ public class PPO
     [HideInInspector] public double delta; // "delta t" used in GAE calculation
     [HideInInspector] public int trainingEpochs; // Number of times a network will be trained on an episode's data
     [HideInInspector] public double lastGAE; // Used to temporarily save GAE value
-    [HideInInspector] public int batchSize; // Size of the batch = frameBufferSize - framesPerState + 1
+    public int batchSize; // Size of the batch = frameBufferSize - framesPerState + 1
     [HideInInspector] public double[] rewards; // Stores a batch of rewards
     [HideInInspector] public int[] actions; // Stores a batch of actions taken during episode
     [HideInInspector] public double[][] predictions; // Stores action probabilities taken during episode
@@ -153,7 +153,7 @@ public class PPO
     {
         for (int i = 0; i < trainingEpochs * batchSize; i++) // Run training "x" number of times over the training data collected during one episode
         {
-            int batchIndex = UnityEngine.Random.Range(0, batchSize);
+            int batchIndex = UnityEngine.Random.Range(0, batchSize - 1); // Fixed index out of range error by subtracting one from batchSize
             double[] state = env.GetState(batchIndex + RLManager.instance.settings.framesPerState - 1); // Create a state from the frame buffer
             ClippedSurrogateObjective(state, batchIndex); // Run the clipped surrogate objective (Main part of PPO)
             UpdateActor(state, actorError, oneHotActions); // Update the actor network

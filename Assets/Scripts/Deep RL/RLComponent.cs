@@ -20,6 +20,7 @@ public class RLComponent : MonoBehaviour
     [Space(10)]
 
     [Header("Reinforcement Learning")]
+    public Settings.Algorithm algo; // The RL algorithm being used
     public DoubleDQN doubleDQN; // Double DQN algorithm
     public PPO ppo; // Proximal Policy Optimization algorithm
     public Environment env; // Environment (Frames, States and Rewards)
@@ -75,7 +76,11 @@ public class RLComponent : MonoBehaviour
     private Color red;
     private Color white;
 
-    public Settings.Algorithm algo; // The RL algorithm being used
+    [Space(10)]
+    [Header("Test Specific")]
+    private Turret turret;
+
+
     #endregion
 
     #region Start/Update Methods
@@ -85,6 +90,7 @@ public class RLComponent : MonoBehaviour
         mat = GetComponent<MeshRenderer>().material;
         red = new Color(255, 0, 0); 
         white = new Color(255, 255, 255);
+        turret = GameObject.FindWithTag("Turret").GetComponent<Turret>();
     }
     private void Update()
     {
@@ -309,7 +315,7 @@ public class RLComponent : MonoBehaviour
 
         double currentReward = Reward(); // Calculate reward for Q(s, a)
 
-        double[] nextFrame = env.GetNextFrame(); // Creates next frame
+        double[] nextFrame = env.GetNextFrame(epiSteps); // Creates next frame
 
         int lastFrameIndex = env.AppendFrame(nextFrame); // Add frame to frame buffer
 
@@ -408,7 +414,7 @@ public class RLComponent : MonoBehaviour
         PPOExperience(currentAction, reward, predictions, value, isDone); // TODO: Add one hot and old log probs to batch
 
         // Advance frame
-        double[] nextFrame = env.GetNextFrame(); // Creates next frame
+        double[] nextFrame = env.GetNextFrame(epiSteps); // Creates next frame
 
         env.AppendFrame(nextFrame); // Add frame to frame buffer
 
@@ -528,12 +534,21 @@ public class RLComponent : MonoBehaviour
                 env.fbIndex = 0;
             }
 
+            // Destroy projectile and reset timer
+            ResetProjectiles();
+
             // The following can be used to reset learning rates each episode
             //foreach (Layer lay in mainNet.layers)
             //{
                 //lay.t = 0; // Resetting t to zero will reset the learning rate each episode
             //}
         }
+    }
+
+    private void ResetProjectiles()
+    {
+        if (turret.projectile_tf) Destroy(turret.projectile_tf.gameObject);
+        turret.timerStart = Time.time;
     }
     /// <summary>
     /// Copy weights from main network to target network.
