@@ -15,15 +15,35 @@ public class Turret : MonoBehaviour
     [HideInInspector] public float timerStart;
     private bool isReadyToFire;
     public float turretDelay;
-    public float turretPower;
     public Transform projectile_tf;
+    public RLComponent rlComponent;
+    public RaycastHit hit;
+    public bool isTargetVisible;
 
     private void Start()
     {
         tf = GetComponent<Transform>();
         timerStart = Time.time;
     }
+    private void Update()
+    {
+        if (Physics.Raycast(muzzle.position, muzzle.forward, out hit))
+        {
+            if (hit.collider.tag == "CoverObject")
+            {
+                //Debug.Log("Target not visible");
+                isTargetVisible = false;
+                Debug.DrawLine(muzzle.position - (muzzle.up * 0.1f), hit.point, Color.green, 1f);
+            }
+            else
+            {
+                //Debug.Log("Target is visible");
+                isTargetVisible = true;
+                Debug.DrawLine(muzzle.position - (muzzle.up * 0.1f), hit.point, Color.red, 1f);
+            }
+        }
 
+    }
     private void OnTriggerStay(Collider other)
     {
         if (other.CompareTag("Agent"))
@@ -41,8 +61,7 @@ public class Turret : MonoBehaviour
             // Raycast vectorToTarget
             if (angleToTarget < RLManager.instance.settings.fieldOfView && targetDistance < RLManager.instance.settings.maxViewDistance)
             {
-                RaycastHit hit;
-                if (Physics.Raycast(tf.position, vectorToTarget, out hit))
+                if (Physics.Raycast(tf.position, vectorToTarget))
                 {
                     //tf.LookAt(hit.point);
                     Vector3 newDirection = Vector3.RotateTowards(tf.forward, vectorToTarget, 5 * Time.deltaTime, 0.0f);
@@ -58,7 +77,10 @@ public class Turret : MonoBehaviour
 
                         projectile_tf = projectileClone.GetComponent<Transform>();
 
+                        if (!rlComponent) rlComponent = GameObject.FindWithTag("Agent").GetComponent<RLComponent>();
+
                         StartCoroutine(DestroyProjectile(projectileClone));
+                        rlComponent.env.isProjectileActive = false;
 
                         timerStart = Time.time;
                         isReadyToFire = false;
@@ -72,43 +94,10 @@ public class Turret : MonoBehaviour
     private IEnumerator DestroyProjectile(GameObject projectileClone)
     {
         yield return new WaitForSeconds(3f);
-        GameObject.FindWithTag("Agent").GetComponent<RLComponent>().env.doesProjectileMiss = false;
         Destroy(projectileClone);
     }
     private void ReadyCheck()
     {
         if (Time.time >= timerStart + turretDelay) isReadyToFire = true;
-    }
-    /// <summary>
-    /// AI Vision is limited to field of view and max view distance
-    /// </summary>
-    /// <param name="vectorToTarget"></param>
-    /// <param name="ttf"></param>
-    private void AIVision(Vector3 vectorToTarget, Transform ttf)
-    {
-        // Find the distance between the two vectors in float to compare with maxViewDistance
-        targetDistance = Vector3.Distance(ttf.position, tf.position);
-
-        // Find the angle between the direction our agent is facing (forward in local space) and the vector to the target.
-        float angleToTarget = Vector3.Angle(vectorToTarget, tf.forward);
-
-        if (angleToTarget < RLManager.instance.settings.fieldOfView && targetDistance < RLManager.instance.settings.maxViewDistance)
-        {
-            int obstacleLayer = LayerMask.NameToLayer("Obstacle");             // Add Walls layer to variable
-            int objectiveLayer = LayerMask.NameToLayer("Objective");           // Add Player layer to variable
-            int layerMask = (1 << obstacleLayer) | (1 << objectiveLayer);      // Create layermask
-
-            RaycastHit hit;
-
-            // Raycast to detect objective within field of view with max view distance as a limit
-            if (Physics.Raycast(tf.position, vectorToTarget, out hit, RLManager.instance.settings.maxViewDistance, layerMask))
-            {
-                if (hit.collider.CompareTag("Objective"))
-                {
-                    // boolean to indicate objective is sighted (state input)
-                    // angleToTarget (state input)
-                }
-            }
-        }
     }
 }

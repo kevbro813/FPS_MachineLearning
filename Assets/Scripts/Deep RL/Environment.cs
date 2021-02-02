@@ -11,14 +11,15 @@ public class Environment
     private Vector3[] directions;
     public double[][] frameBuffer; // An array to hold the frame buffer
     public double[] distancesToObstacles;  
-    public double targetDistance;
-    public double rotation;
+    //public double targetDistance;
+    //public double rotation;
     public int fbIndex; // Frame buffer index used to fill the fb
     public int fbCount; // Frame buffer count used to track the size of the fb
     public bool isOnObjective = false; // If true, the agent will be rewarded as long as they are on the objective
     public bool isHitByProjectile = false;
     public bool doesProjectileMiss = false;
-    public bool isAtCheckpoint = false; // If true, agent will be rewarded one time
+    public bool isProjectileActive = false;
+    //public bool isAtCheckpoint = false; // If true, agent will be rewarded one time
     public int frameBufferSize; // Size of the frame buffer, AKA maximum number of frames that can be stored at any time
     public int framesPerState; // Number of frames in a state
     private int inputsPerFrame;  // Number of inputs per frame
@@ -30,6 +31,8 @@ public class Environment
     public float zObjDist;
     public float xObjDist;
     private Turret turret;
+    public float zProjectileDist;
+    public float xProjectileDist;
     #endregion
 
     #region Initialization
@@ -66,29 +69,34 @@ public class Environment
     { 
         double reward = 0;
 
-        if (isOnObjective) reward += 3;
-        else reward -= 1;
+        if (isOnObjective) reward += 10; // Reward if standing on objective
+        else reward -= 1; // Penalize if not on objective
 
-        //bool isPenalized = false;
-
+        // Keep agent from running into walls too frequently (Max collisions seems to be 5 of the 8 directions which equals a -2.5 reward)
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
-            bool isPenalized = distancesToObstacles[i] < 1;
+            bool isPenalized = distancesToObstacles[i] < 1f;
             if (isPenalized) reward -= 0.5f;
         }
 
-        //if (isPenalized) reward -= 2;
-
         if (isHitByProjectile)
         {
-            reward -= 100;
+            Debug.Log("Hit");
+            reward -= 15;
             isHitByProjectile = false;
         }
 
         if (doesProjectileMiss)
         {
-            reward += 100;
+            Debug.Log("Miss");
+            //reward += 5;
             doesProjectileMiss = false;
+        }
+
+        if (!turret.isTargetVisible)
+        {
+            //Debug.Log("Target is not visible");
+            reward += 5;
         }
 
         return reward;
@@ -105,22 +113,28 @@ public class Environment
     {
         CollisionDetection(); // CollisionDetection function will collect the distance to objects from the raycasts pointed in the 8 compass directions
 
-        double[] nextFrame = new double[inputsPerFrame]; // Create a float array to hold the next frame
+        double[] nextFrame = new double[inputsPerFrame]; // Create a double array to hold the next frame
 
-        // Populate the next_Frame array with the values for each input
+        // Populate the nextFrame array with the values for each input
 
-        if (turret.projectile_tf) // Z and X axes distance to projectile
+        if (turret.projectile_tf) // Z and X axes distance to projectile when the projectile has been shot
         {
-            nextFrame[0] = turret.projectile_tf.position.z - tf.position.z;
-            nextFrame[1] = turret.projectile_tf.position.x - tf.position.x;
+            zProjectileDist = turret.projectile_tf.position.z - tf.position.z;
+            xProjectileDist = turret.projectile_tf.position.x - tf.position.x;
+
+            nextFrame[0] = zProjectileDist;
+            nextFrame[1] = xProjectileDist;
         }
-        else // Distance is zero when no projectile is detected
+        else // Distance when no projectile is detected uses the barrel opening transform position (AKA muzzle)
         {
-            nextFrame[0] = 0;
-            nextFrame[1] = 0;
+            zProjectileDist = turret.muzzle.position.z - tf.position.z;
+            xProjectileDist = turret.muzzle.position.x - tf.position.x;
+
+            nextFrame[0] = zProjectileDist;
+            nextFrame[1] = xProjectileDist;
         }
 
-        // Raycast sensor in 8 compass directions
+        // Raycast sensor in 8 compass directions around the agent
         nextFrame[2] = distancesToObstacles[0];
         nextFrame[3] = distancesToObstacles[1];
         nextFrame[4] = distancesToObstacles[2];
@@ -130,11 +144,21 @@ public class Environment
         nextFrame[8] = distancesToObstacles[6];
         nextFrame[9] = distancesToObstacles[7];
 
+        nextFrame[10] = Convert.ToDouble(turret.isTargetVisible); // Indicates if the agent is visible to the turret using a raycast hit
+
+        // The z and x position of the agent (used to know where it is in the level)
+        nextFrame[11] = tf.position.z;
+        nextFrame[12] = tf.position.x;
+
+        // Calculate the agent's distance to the objective
         zObjDist = tf.position.z - RLManager.instance.objectiveLocation.z; // z distance to objective
         xObjDist = tf.position.x - RLManager.instance.objectiveLocation.x; // x distance to objective
-        nextFrame[10] = zObjDist; // Z axis distance to objective
-        nextFrame[11] = xObjDist; // X axis distance to objective
+        nextFrame[13] = zObjDist;
+        nextFrame[14] = xObjDist;
 
+
+        // Indicate if projectile is active
+        //nextFrame[2] = Convert.ToDouble(isProjectileActive);
         //nextFrame[0] = episodeStep; // Time represented by ticks of the update method each episode, AKA episode epochs
         //nextFrame[10] = tf.position.z;
         //nextFrame[11] = tf.position.x;
@@ -215,33 +239,37 @@ public class Environment
     private void CollisionDetection()
     {   
         hit = new RaycastHit[8];
-        int hitDir = hit.Length;
+        //int hitDir = hit.Length;
 
         // Directions Start forward then moves clockwise
         directions = new Vector3[] { new Vector3(0, 0, 1), new Vector3(1, 0, 1),
             new Vector3(1, 0, 0), new Vector3(1, 0, -1),  new Vector3(0, 0, -1),
             new Vector3(-1, 0, -1), new Vector3(-1, 0, 0), new Vector3(-1, 0, 1) };
 
-        while (hitDir > 0)
+        //while (hitDir > 0)
+        for (int hitDir = 0; hitDir < hit.Length; hitDir++)
         {
-            hitDir--;
+            //hitDir--;
             if (Physics.Raycast(tf.position, directions[hitDir], out hit[hitDir], collisionDetectRange))
             {
                 //Debug.DrawRay(tf.position, directions[hitL], Color.blue, distance);
 
-                Vector3 hitLocation = hit[hitDir].point;
-
-                double distanceToHit = Vector3.Distance(hitLocation, tf.position);
-
-                // If the raycast hits an obstacle...
-                if (hit[hitDir].collider.CompareTag("Obstacle"))
+                // If the raycast hits an obstacle or cover object...
+                if (hit[hitDir].collider.CompareTag("Obstacle") || hit[hitDir].collider.CompareTag("CoverObject") || hit[hitDir].collider.CompareTag("Turret"))
                 {
+                    Vector3 hitLocation = hit[hitDir].point;
+
+                    double distanceToHit = Vector3.Distance(hitLocation, tf.position);
+
+                    Debug.DrawLine(tf.position, hit[hitDir].point, Color.blue, 1f);
+
                     // Check if the obstacle is within the collision detection range
                     if (distanceToHit <= collisionDetectRange) distancesToObstacles[hitDir] = distanceToHit; // Set the distance to the hit object in the distancesToObjects array
                 }
             }
             else distancesToObstacles[hitDir] = collisionDetectRange; // If no object is hit by raycast, then set distancesToObstacles to max
         }
+        
     }
     #endregion
 }

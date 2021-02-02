@@ -33,7 +33,6 @@ Transform:
   m_LocalPosition: {x: 144.12, y: 21.539406, z: 195.30824}
   m_LocalScale: {x: 2, y: 1, z: 2}
   m_Children:
-  - {fileID: 6755491110303541734}
   - {fileID: 1875826702810889181}
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -113,7 +112,11 @@ MonoBehaviour:
   angleToTarget: 0
   projectileObject: {fileID: 0}
   muzzle: {fileID: 0}
+  timerStart: 0
   turretDelay: 0
+  projectile_tf: {fileID: 0}
+  rlComponent: {fileID: 0}
+  isTargetVisible: 0
 --- !u!135 &2646810523063757294
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -172,9 +175,10 @@ Transform:
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0.34, z: 0.72}
   m_LocalScale: {x: 0.1, y: 0.5, z: 0.2}
-  m_Children: []
+  m_Children:
+  - {fileID: 6755491110303541734}
   m_Father: {fileID: 1445550963135221643}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!33 &796222466916923089
 MeshFilter:
@@ -259,10 +263,10 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8490731907478828651}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.34000015, z: 1.300003}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 1.160006, z: 0}
+  m_LocalScale: {x: 10, y: 5, z: 2}
   m_Children: []
-  m_Father: {fileID: 1445550963135221643}
+  m_Father: {fileID: 1875826702810889181}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

@@ -34,18 +34,18 @@ MonoBehaviour:
   gradientThreshold: 1
   maxViewDistance: 50
   fieldOfView: 360
-  collisionDetectRange: 50
+  collisionDetectRange: 5
   autoSaveEpisode: 10
   ppoClip: 0.2
-  entropyBonus: 0.00005
+  entropyBonus: 0.0005
   tau: 0.95
   trainingEpochs: 6
   asyncAgents: 1
   saveLocation: E:\\ML_Specimen
   dqnNetStructure: 1e0000003c000000280000001e00000005000000
-  actorNetStructure: 24000000500000003c0000002800000005000000
-  criticNetStructure: 24000000500000003c0000002800000001000000
+  actorNetStructure: 2d0000005a0000003c0000001e00000005000000
+  criticNetStructure: 2d0000005a0000003c0000001e00000001000000
   algo: 1
   dqnActivations: 01000000010000000100000001000000
-  criticActivations: 01000000010000000100000005000000
+  criticActivations: 03000000030000000300000005000000
   actorActivations: 03000000030000000300000004000000
