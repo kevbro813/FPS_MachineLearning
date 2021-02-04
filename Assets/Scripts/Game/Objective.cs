@@ -2,10 +2,10 @@
 // This is attached to an objective and will trigger a true bool on the agent that enters the trigger. Sets to false when leaving.
 public class Objective : MonoBehaviour
 {
-    private RandomObjective randObj;
+    private RandomSpawner randObj;
     private void Start()
     {
-        randObj = GetComponent<RandomObjective>();
+        randObj = GetComponent<RandomSpawner>();
     }
 
     private void OnTriggerEnter(Collider col)
@@ -27,7 +27,7 @@ public class Objective : MonoBehaviour
     //    if (col.gameObject.CompareTag("Agent"))
     //    {
     //        col.GetComponent<RLComponent>().env.isOnObjective = true;
-    //        randObj.RandomLocation();
+    //        objectiveSpawner.RandomLocation();
     //    }
     //}
 }

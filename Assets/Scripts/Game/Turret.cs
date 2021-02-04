@@ -22,12 +22,12 @@ public class Turret : MonoBehaviour
 
     private void Start()
     {
-        tf = GetComponent<Transform>();
+        tf = GetComponentInParent<Transform>();
         timerStart = Time.time;
     }
     private void Update()
     {
-        if (Physics.Raycast(muzzle.position, muzzle.forward, out hit))
+        if (Physics.Raycast(muzzle.position, muzzle.forward, out hit, 10f))
         {
             if (hit.collider.tag == "CoverObject")
             {

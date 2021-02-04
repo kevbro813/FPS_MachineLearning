@@ -230,7 +230,8 @@ public class RLComponent : MonoBehaviour
         episodeNum = 1;
         isAgentActive = true;
         
-        RLManager.instance.UpdateObjectiveLocation(); // Set an initial location for the objective // TODO: RANDOM OBJECTIVE
+        RLManager.instance.UpdateObjectiveLocation(); // Set an initial location for the objective
+        RLManager.instance.UpdateTurretLocation();
     }
     /// <summary>
     /// Save variable settings locally.
@@ -521,6 +522,9 @@ public class RLComponent : MonoBehaviour
 
             // Random Objective
             RLManager.instance.UpdateObjectiveLocation();
+
+            // Random Turret Location
+            RLManager.instance.UpdateTurretLocation();
 
             tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
 

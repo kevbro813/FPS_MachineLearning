@@ -69,23 +69,22 @@ public class Environment
     { 
         double reward = 0;
 
-        if (isOnObjective) reward += 10; // Reward if standing on objective
+        if (isOnObjective) reward += 3; // Reward if standing on objective
         else reward -= 1; // Penalize if not on objective
 
         // Keep agent from running into walls too frequently (Max collisions seems to be 5 of the 8 directions which equals a -2.5 reward)
         for (int i = 0; i < distancesToObstacles.Length; i++)
         {
             bool isPenalized = distancesToObstacles[i] < 1f;
-            if (isPenalized) reward -= 0.5f;
+            if (isPenalized) reward -= 0.25f;
         }
 
         if (isHitByProjectile)
         {
             Debug.Log("Hit");
-            reward -= 15;
+            reward -= 5;
             isHitByProjectile = false;
         }
-
         if (doesProjectileMiss)
         {
             Debug.Log("Miss");
@@ -96,7 +95,7 @@ public class Environment
         if (!turret.isTargetVisible)
         {
             //Debug.Log("Target is not visible");
-            reward += 5;
+            reward += 3;
         }
 
         return reward;

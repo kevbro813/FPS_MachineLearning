@@ -24,7 +24,9 @@ public class RLManager : MonoBehaviour
     public float spawnMax_Z; // Max Z bound
     public bool isSessionPaused; // Used to fully pause the session
 
-    public RandomObjective randObj;
+    public RandomSpawner objectiveSpawner;
+    public RandomSpawner turretSpawner;
+    public Vector3 turretLocation;
     public Vector3 objectiveLocation;
     #endregion
 
@@ -164,8 +166,14 @@ public class RLManager : MonoBehaviour
     }
     public void UpdateObjectiveLocation()
     {
-        randObj.RandomLocation(); // TODO: RANDOM OBJECTIVE
-        objectiveLocation = randObj.objectiveLocation;
+        objectiveSpawner.RandomLocation(); // TODO: RANDOM OBJECTIVE
+        objectiveLocation = objectiveSpawner.spawnLocation;
+    }
+
+    public void UpdateTurretLocation()
+    {
+        turretSpawner.RandomLocation();
+        turretLocation = turretSpawner.spawnLocation;
     }
     #endregion
 }
