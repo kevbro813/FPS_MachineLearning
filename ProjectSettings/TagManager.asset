@@ -4,14 +4,11 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - AI
   - Objective
-  - Obstacle
-  - Agent
+  - Turret
   - AdminMenu
   - UIManager
-  - Turret
-  - CoverObject
+  - Agent
   layers:
   - Default
   - TransparentFX
@@ -21,11 +18,11 @@ TagManager:
   - UI
   - 
   - 
-  - AI
-  - Objective
-  - Obstacle
-  - Projectile
-  - Turret
+  - 
+  - 
+  - 
+  - 
+  - 
   - 
   - 
   - 

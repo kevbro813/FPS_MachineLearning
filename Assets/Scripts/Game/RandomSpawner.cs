@@ -19,7 +19,7 @@ public class RandomSpawner : MonoBehaviour
     {
         float randomX = Random.Range(locationMin_X, locationMax_X);
         float randomZ = Random.Range(locationMin_Z, locationMax_Z);
-        spawnLocation = new Vector3(randomX, 1.2f, randomZ);
+        spawnLocation = new Vector3(randomX, 1.5f, randomZ);
         tf.position = spawnLocation;
     }
 }

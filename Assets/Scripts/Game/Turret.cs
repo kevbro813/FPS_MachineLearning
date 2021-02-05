@@ -27,7 +27,7 @@ public class Turret : MonoBehaviour
     }
     private void Update()
     {
-        if (Physics.Raycast(muzzle.position, muzzle.forward, out hit, 10f))
+        if (Physics.Raycast(muzzle.position, muzzle.forward, out hit))
         {
             if (hit.collider.tag == "CoverObject")
             {

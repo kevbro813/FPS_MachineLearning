@@ -519,14 +519,34 @@ public class RLComponent : MonoBehaviour
 
             // Generate a random spawn
             RLManager.instance.RandomSpawn();
+            tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
 
             // Random Objective
+            RandomObjective:
             RLManager.instance.UpdateObjectiveLocation();
 
-            // Random Turret Location
+            // Check if agent spawn is too close to the objective
+            if (RLManager.instance.objectiveLocation.x < RLManager.instance.spawnpoint.position.x + 2 && RLManager.instance.objectiveLocation.x > RLManager.instance.spawnpoint.position.x - 2)
+            {
+                if (RLManager.instance.objectiveLocation.z < RLManager.instance.spawnpoint.position.z + 2 && RLManager.instance.objectiveLocation.z > RLManager.instance.spawnpoint.position.z - 2)
+                {
+                    Debug.Log("Respawn objective since it is too close to agent");
+                   goto RandomObjective;
+                }
+            }
+
+            RandomTurret:
             RLManager.instance.UpdateTurretLocation();
 
-            tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
+            // Check if agent spawn is too close to the objective
+            if (RLManager.instance.turretLocation.x < RLManager.instance.spawnpoint.position.x + 2 && RLManager.instance.turretLocation.x > RLManager.instance.spawnpoint.position.x - 2)
+            {
+                if (RLManager.instance.turretLocation.z < RLManager.instance.spawnpoint.position.z + 2 && RLManager.instance.turretLocation.z > RLManager.instance.spawnpoint.position.z - 2)
+                {
+                    Debug.Log("Respawn turret since it is too close to agent");
+                    goto RandomTurret;
+                }
+            }
 
             // Updates the average reward with the latest episode
             GameManager.instance.ui.UpdateEpisodeAverage(totalReward, episodeNum);
