@@ -97,6 +97,7 @@ public class Environment
             //Debug.Log("Target is not visible");
             reward += 3;
         }
+        //else reward -= 2;
 
         return reward;
     }
@@ -145,22 +146,24 @@ public class Environment
 
         nextFrame[10] = Convert.ToDouble(turret.isTargetVisible); // Indicates if the agent is visible to the turret using a raycast hit
 
-        // The z and x position of the agent (used to know where it is in the level)
-        nextFrame[11] = tf.position.z;
-        nextFrame[12] = tf.position.x;
-
         // Calculate the agent's distance to the objective
-        zObjDist = tf.position.z - RLManager.instance.objectiveLocation.z; // z distance to objective
-        xObjDist = tf.position.x - RLManager.instance.objectiveLocation.x; // x distance to objective
-        nextFrame[13] = zObjDist;
-        nextFrame[14] = xObjDist;
+        zObjDist = tf.position.z - RLManager.instance.objectiveTf.position.z; // z distance to objective
+        xObjDist = tf.position.x - RLManager.instance.objectiveTf.position.x; // x distance to objective
+        nextFrame[11] = zObjDist;
+        nextFrame[12] = xObjDist;
+
+        // The z and x position of the agent (used to know where it is in the level)
+        nextFrame[13] = tf.position.z;
+        nextFrame[14] = tf.position.x;
+
+        // Location of the turret
+        //nextFrame[15] = RLManager.instance.turretTf.position.z;
+        //nextFrame[16] = RLManager.instance.turretTf.position.x;
 
 
         // Indicate if projectile is active
         //nextFrame[2] = Convert.ToDouble(isProjectileActive);
         //nextFrame[0] = episodeStep; // Time represented by ticks of the update method each episode, AKA episode epochs
-        //nextFrame[10] = tf.position.z;
-        //nextFrame[11] = tf.position.x;
         //nextFrame[12] = tf.transform.eulerAngles.y;
 
         return nextFrame; // Return nextFrame

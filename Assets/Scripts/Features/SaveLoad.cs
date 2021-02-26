@@ -84,6 +84,22 @@ public static class SaveLoad
             Debug.Log("There is no file with that name.");
         }
     }
+
+    public static void LoadFSMNetwork(string fileName, AgentFSM fsm, string saveLocation, int stateNumber)
+    {
+
+        if (File.Exists(Path.Combine(saveLocation, fileName + "_settings.gd"))) // Check that the file exists
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            FileStream actorFile = File.Open(Path.Combine(saveLocation, fileName + "_Actor.gd"), FileMode.Open); // Load actor network
+            fsm.stateNeuralNetworks[stateNumber] = (NeuralNetwork)bf.Deserialize(actorFile);
+            actorFile.Close();
+        }
+        else // File does not exist
+        {
+            Debug.Log("There is no file with that name.");
+        }
+    }
     #endregion
 
     #region Save/Load Settings

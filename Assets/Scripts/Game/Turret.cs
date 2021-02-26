@@ -15,8 +15,8 @@ public class Turret : MonoBehaviour
     [HideInInspector] public float timerStart;
     private bool isReadyToFire;
     public float turretDelay;
-    public Transform projectile_tf;
-    public RLComponent rlComponent;
+    [HideInInspector] public Transform projectile_tf;
+    [HideInInspector] public RLComponent rlComponent;
     public RaycastHit hit;
     public bool isTargetVisible;
 
@@ -42,7 +42,6 @@ public class Turret : MonoBehaviour
                 Debug.DrawLine(muzzle.position - (muzzle.up * 0.1f), hit.point, Color.red, 1f);
             }
         }
-
     }
     private void OnTriggerStay(Collider other)
     {
@@ -73,7 +72,6 @@ public class Turret : MonoBehaviour
                     {
                         // Fire projectile at target
                         GameObject projectileClone = Instantiate(projectileObject, muzzle.position, muzzle.rotation);
-                        //projectileClone.GetComponent<Rigidbody>().AddForce(muzzle.forward * turretPower);
 
                         projectile_tf = projectileClone.GetComponent<Transform>();
 

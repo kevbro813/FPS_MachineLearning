@@ -161,8 +161,8 @@ public class Agent
         double random = (double)UnityEngine.Random.Range(0f, 1f); // Random variable between 0 and 1
         for (int i = 0; i < actionQty; i++)
         {
-            if (random < distribution[i]) // If the random number is less than the softmax distribution return the index
-                return i; 
+            if (random < distribution[i]) return i; // If the random number is less than the softmax distribution return the index
+
             random -= distribution[i]; // Otherwise, subtract the random number by the distribution and move on to the next action
         }
 

@@ -10,6 +10,7 @@ public class RLManager : MonoBehaviour
     public GameObject agentPrefab; // Prefab of the agent to spawn
     public List<GameObject> agentObjectsList; // List of agents TODO: Will be used with async agent update
     public RLComponent rlComponent; // The active reinforcement learning component TODO: Will need to update for async agents
+    public AgentFSM agentFSM;
     public RLComponent rlComponentTester; // Used to test the neural network
     public Transform spawnpoint;  
     public Transform agentShell; // Empty shell to organize inspector
@@ -28,6 +29,8 @@ public class RLManager : MonoBehaviour
     public RandomSpawner turretSpawner;
     public Vector3 turretLocation;
     public Vector3 objectiveLocation;
+    public Transform objectiveTf;
+    public Transform turretTf;
     #endregion
 
     #region Unity Monobehaviour Methods
@@ -163,6 +166,8 @@ public class RLManager : MonoBehaviour
         GameObject agentClone = Instantiate(agentPrefab, spawnpoint.position, spawnpoint.rotation, agentShell);
         agentObjectsList.Add(agentClone);
         rlComponent = agentClone.GetComponent<RLComponent>();
+        agentFSM = agentClone.GetComponent<AgentFSM>();
+
     }
     public void UpdateObjectiveLocation()
     {

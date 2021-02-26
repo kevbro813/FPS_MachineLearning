@@ -9,7 +9,8 @@ public class UIManager : MonoBehaviour
     #region Variables
     [HideInInspector] public string fileName;
     [HideInInspector] public string settingsName;
-    public RLComponent rlComponent;
+    [HideInInspector] public RLComponent rlComponent;
+    [HideInInspector] public AgentFSM agentFSM;
     public InputField fileIpt;
     public InputField maxEpsisodeIpt;
     public InputField stepsEpsIpt;
@@ -50,12 +51,15 @@ public class UIManager : MonoBehaviour
     public Text currentCost;
     public Toggle trainingToggle;
     public Toggle loadSettingsToggle;
+    public Toggle fsmToggle;
+    private bool isFSMActive;
     private bool isTrainingTemp;
     private bool isLoadSettings;
     public Dropdown algoDropdown;
     public InputField actorLRIpt;
     public InputField criticLRIpt;
     public InputField asyncAgentIpt;
+    public InputField[] fsmLoadIpt;
     public Text dqnStructureDisplay;
     public Text actorStructureDisplay;
     public Text criticStructureDisplay;
@@ -75,6 +79,8 @@ public class UIManager : MonoBehaviour
     public Dropdown[] actorActDropdowns;
     public Dropdown[] criticActDropdowns;
     public InputField saveLocationipt;
+
+    public Text fsmState;
     #endregion
 
     #region Unity Monobehaviour Methods
@@ -82,6 +88,7 @@ public class UIManager : MonoBehaviour
     {
         isLoadSettings = true;
         isTrainingTemp = true;
+        isFSMActive = false;
         dqnHiddenipt.text = "10";
         actorHiddenipt.text = "10";
         criticHiddenipt.text = "10";
@@ -230,6 +237,7 @@ public class UIManager : MonoBehaviour
         trEpochsIpt.text = RLManager.instance.settings.trainingEpochs.ToString();
         loadSettingsToggle.isOn = isLoadSettings;
         trainingToggle.isOn = isTrainingTemp;
+        fsmToggle.isOn = isFSMActive;
         actorLRIpt.text = RLManager.instance.settings.actorLearningRate.ToString();
         criticLRIpt.text = RLManager.instance.settings.criticLearningRate.ToString();
         asyncAgentIpt.text = RLManager.instance.settings.asyncAgents.ToString();
@@ -561,6 +569,20 @@ public class UIManager : MonoBehaviour
     public void UpdateTrainingToggle()
     {
         isTrainingTemp = trainingToggle.isOn;
+        if (isTrainingTemp)
+        {
+            isFSMActive = false;
+            fsmToggle.isOn = isFSMActive;
+        }
+    }
+    public void UpdateFSMToggle()
+    {
+        isFSMActive = fsmToggle.isOn;
+        if (isFSMActive)
+        {
+            isTrainingTemp = false;
+            trainingToggle.isOn = isTrainingTemp;
+        }
     }
     public void UpdateActorLearning()
     {
@@ -600,7 +622,7 @@ public class UIManager : MonoBehaviour
         epsilonMin.text = RLManager.instance.settings.epsilonMin.ToString();
         episodeSteps.text = rlComponent.epiSteps.ToString();
         episodeMaxSteps.text = RLManager.instance.settings.epiMaxSteps.ToString();
-        
+        if (agentFSM) fsmState.text = agentFSM.agentStates.ToString();
         if (rlComponent.epochs % RLManager.instance.costUpdateInEpochs == 0 && rlComponent.cost != null)
         {
             currentCost.text = rlComponent.cost.ToString();
@@ -665,6 +687,27 @@ public class UIManager : MonoBehaviour
         Debug.Log("Loading..." + fileName);
         GameManager.instance.gameState = "continue";
     }
+    public void LoadFSMNetwork(int stateIndex)
+    {
+        if (!agentFSM)
+        {
+            RLManager.instance.SpawnAgent();
+            rlComponent = RLManager.instance.rlComponent;
+            agentFSM = RLManager.instance.agentFSM;
+        }
+
+        string netFileName = fsmLoadIpt[stateIndex].text;
+        string netSettingsName = netFileName + "_settings";
+
+        SaveLoad.LoadFSMNetwork(netFileName, agentFSM, RLManager.instance.settings.saveLocation, stateIndex);
+
+        SaveLoad.LoadSettings(netSettingsName, RLManager.instance.settings.saveLocation);
+        UpdateSettingsDisplay();
+
+        rlComponent.Init_FSMTest(RLManager.instance.settings.actorNetStructure);
+
+        Debug.Log("Loading to FSM..." + netFileName);
+    }
     public void NewAgent()
     {
         fileName = fileIpt.text;
@@ -696,6 +739,25 @@ public class UIManager : MonoBehaviour
             Debug.Log("New Game..." + fileName);
             GameManager.instance.gameState = "continue";
         }
+    }
+
+    public void BeginFSMTest()
+    {
+        GameManager.instance.gameState = "continue";
+        rlComponent.isFSMReady = true;
+    }
+
+    public void ChangeStateButton()
+    {
+        agentFSM.agentStates++;
+        int maxStates = Enum.GetNames(typeof(AgentStates)).Length;
+
+        if ((int)agentFSM.agentStates >= maxStates)
+        {
+            agentFSM.agentStates = 0;
+        }
+
+        Debug.Log((int) agentFSM.agentStates);
     }
     #endregion
 }

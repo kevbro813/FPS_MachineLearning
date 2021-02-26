@@ -27,15 +27,11 @@ public class Projectile : MonoBehaviour
             rlComponent.env.isHitByProjectile = true;
             Destroy(this.gameObject);
         }
-
-        else if (!col.gameObject.CompareTag("Turret"))
+        else
         {
             rlComponent.env.doesProjectileMiss = true;
             Destroy(this.gameObject);
         }
-        else if (col.gameObject.CompareTag("Turret"))
-        {
-            Debug.Log("Turret hit");
-        }
+
     }
 }

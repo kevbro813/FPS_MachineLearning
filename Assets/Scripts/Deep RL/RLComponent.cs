@@ -43,6 +43,7 @@ public class RLComponent : MonoBehaviour
     [Header("State Booleans")]
     public bool isDone; // Done flag used to determine when the game is over
     public bool isTraining; // Toggle train function
+    public bool isFSMActive;
     public bool isNetworkNew; // Determines if the network is new, this is set to false when loading a network from file
     public bool isStateReady; // Prevents training before enough frames are collected to create a state
     public bool isAgentActive; // Indicates if an agent is active
@@ -79,6 +80,8 @@ public class RLComponent : MonoBehaviour
     [Space(10)]
     [Header("Test Specific")]
     private Turret turret;
+    public AgentFSM agentFSM;
+    public bool isFSMReady;
 
 
     #endregion
@@ -91,6 +94,7 @@ public class RLComponent : MonoBehaviour
         red = new Color(255, 0, 0); 
         white = new Color(255, 255, 255);
         turret = GameObject.FindWithTag("Turret").GetComponent<Turret>();
+        isFSMReady = false;
     }
     private void Update()
     {
@@ -210,7 +214,7 @@ public class RLComponent : MonoBehaviour
         env.Init_Env(GetComponent<Transform>(), this); // Initialize environment variables
 
         ppo = new PPO();
-        ppo.Init_PPO(actionQty, env, agent, actorNet, criticNet); // Initialize DDQN variables
+        ppo.Init_PPO(actionQty, env, agent, actorNet, criticNet); // Initialize PPO variables
     }
     #endregion
 
@@ -264,12 +268,10 @@ public class RLComponent : MonoBehaviour
     /// </summary>
     private void RunSession()
     {
-        AutoSave(); // Periodically auto saves
+        if(!isFSMActive) AutoSave(); // Periodically auto saves
 
-        if (episodeNum == episodeMax) // Check if the game is over
-            Debug.Log("Game Over.");
-        else
-            RunEpisode(); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
+        if (episodeNum == episodeMax) Debug.Log("Game Over."); // Check if the game is over 
+        else RunEpisode(); // Run the RunEpisode method passing in the agent and environment and returning the score (reward) for the episode.
     }
 
     /// <summary>
@@ -279,28 +281,97 @@ public class RLComponent : MonoBehaviour
     /// <param name="env"></param>
     private void RunEpisode()
     {
-        if (!isDone) // If the training session is not done and we are not at the episode max
+        if (!isFSMActive)
         {
-            // Run the current algorithm
-            if (algo == Settings.Algorithm.Double_DQN)
-                RunDoubleDQN();
-            else if (algo == Settings.Algorithm.Proximal_Policy_Optimization)
-                RunPPO();
+            if (!isDone) // If the training session is not done and we are not at the episode max
+            {
+                // Run the current algorithm
+                if (algo == Settings.Algorithm.Double_DQN)
+                    RunDoubleDQN();
+                else if (algo == Settings.Algorithm.Proximal_Policy_Optimization)
+                    RunPPO();
+            }
+            // If done and PPO
+            else if (isDone && algo == Settings.Algorithm.Proximal_Policy_Optimization)
+            {
+                if (isTraining) // Train the agent
+                {
+                    cost = ppo.PPOTraining(); // Run training after each episode
+                    isDone = false; // Reset the done flag to false
+                }
+            }
+            // If done and Double DQN
+            else if (isDone && algo == Settings.Algorithm.Double_DQN)
+            {
+                isDone = false; // Reset the done flag to false
+            }
         }
-        // If done and PPO
-        else if (isDone && algo == Settings.Algorithm.Proximal_Policy_Optimization)
+        else
         {
-            cost = ppo.PPOTraining(); // Run training after each episode
-            isDone = false; // Reset the done flag to false
-        }
-        // If done and Double DQN
-        else if (isDone && algo == Settings.Algorithm.Double_DQN)
-        {
-            isDone = false; // Reset the done flag to false
+            if (!isDone && isFSMReady) RunFSMTest();
+            else isDone = false;
         }
     }
     #endregion
 
+    public void Init_FSMTest(int[] actorNetStructure)
+    {
+        algo = Settings.Algorithm.Proximal_Policy_Optimization; // Use PPO
+        isFSMActive = true;
+        Init_Settings();
+        Init_FSMNets(actorNetStructure);
+
+        agent = new Agent();
+        agent.Init_Agent(GetComponent<AIPawn>(), this, actionQty); // Initialize agent variables
+
+        env = new Environment();
+        env.Init_Env(GetComponent<Transform>(), this); // Initialize environment variables
+
+        Init_Training_Variables();
+    }
+    private void Init_FSMNets(int[] actorNetStructure)
+    {
+        // Set neural network structure and associated variables
+        actorLayers = actorNetStructure;
+        actionQty = actorLayers[actorLayers.Length - 1];
+        layerQty = actorLayers.Length;
+        inputsPerState = actorLayers[0];
+        inputsPerFrame = inputsPerState / framesPerState;
+    }
+    private void RunFSMTest()
+    {
+        FSMStep();
+
+        // Add frame to frameBuffer
+        double[] state = env.GetState(env.fbIndex - 1);
+
+        // Get action probabilities from actor net
+        double[] predictions = agentFSM.currentStateNetwork.FeedForward(state);
+
+        agent.PPOAction(predictions); // Perform action and return one hot array
+
+        // Advance frame
+        double[] nextFrame = env.GetNextFrame(epiSteps); // Creates next frame
+
+        env.AppendFrame(nextFrame); // Add frame to frame buffer
+
+        env.UpdateFrameBufferCounters(); // Updates fbIndex and fbCount variables
+
+        NewEpisodeCheck(); // Check if episode is finished
+    }
+
+    private void FSMStep()
+    {
+        epochs++; // Increment total steps
+        epiSteps++; // Increment steps in episode
+
+        // Update HUD display
+        if (!GameManager.instance.adminMenu.activeSelf)
+        {
+            GameManager.instance.ui.UpdateHUD();
+        }
+        DoneCheck();
+    }
     #region Double DQN Main Loop
     /// <summary>
     /// Runs one epoch/step of Double DQN algorithm.
@@ -412,7 +483,7 @@ public class RLComponent : MonoBehaviour
         double reward = Reward(); // Store reward
 
         // Store actions, rewards, predictions (actionProbs), values (value function) and dones as tuples
-        PPOExperience(currentAction, reward, predictions, value, isDone); // TODO: Add one hot and old log probs to batch
+        PPOExperience(currentAction, reward, predictions, value, isDone);
 
         // Advance frame
         double[] nextFrame = env.GetNextFrame(epiSteps); // Creates next frame
@@ -521,30 +592,30 @@ public class RLComponent : MonoBehaviour
             RLManager.instance.RandomSpawn();
             tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
 
+            //RandomTurret:
+            //RLManager.instance.UpdateTurretLocation();
+
+            //// Check if agent spawn is too close to the objective
+            //if (RLManager.instance.turretLocation.x < RLManager.instance.spawnpoint.position.x + 3 && RLManager.instance.turretLocation.x > RLManager.instance.spawnpoint.position.x - 3)
+            //{
+            //    if (RLManager.instance.turretLocation.z < RLManager.instance.spawnpoint.position.z + 3 && RLManager.instance.turretLocation.z > RLManager.instance.spawnpoint.position.z - 3)
+            //    {
+            //        Debug.Log("Respawn turret since it is too close to agent spawn");
+            //        goto RandomTurret;
+            //    }
+            //}
+
             // Random Objective
             RandomObjective:
             RLManager.instance.UpdateObjectiveLocation();
 
             // Check if agent spawn is too close to the objective
-            if (RLManager.instance.objectiveLocation.x < RLManager.instance.spawnpoint.position.x + 2 && RLManager.instance.objectiveLocation.x > RLManager.instance.spawnpoint.position.x - 2)
+            if (RLManager.instance.objectiveLocation.x < RLManager.instance.turretLocation.x + 3 && RLManager.instance.objectiveLocation.x > RLManager.instance.turretLocation.x - 3)
             {
-                if (RLManager.instance.objectiveLocation.z < RLManager.instance.spawnpoint.position.z + 2 && RLManager.instance.objectiveLocation.z > RLManager.instance.spawnpoint.position.z - 2)
-                {
-                    Debug.Log("Respawn objective since it is too close to agent");
+                if (RLManager.instance.objectiveLocation.z < RLManager.instance.turretLocation.z + 3 && RLManager.instance.objectiveLocation.z > RLManager.instance.turretLocation.z - 3)
+                { 
+                    Debug.Log("Respawn objective since it is too close to turret");
                    goto RandomObjective;
-                }
-            }
-
-            RandomTurret:
-            RLManager.instance.UpdateTurretLocation();
-
-            // Check if agent spawn is too close to the objective
-            if (RLManager.instance.turretLocation.x < RLManager.instance.spawnpoint.position.x + 2 && RLManager.instance.turretLocation.x > RLManager.instance.spawnpoint.position.x - 2)
-            {
-                if (RLManager.instance.turretLocation.z < RLManager.instance.spawnpoint.position.z + 2 && RLManager.instance.turretLocation.z > RLManager.instance.spawnpoint.position.z - 2)
-                {
-                    Debug.Log("Respawn turret since it is too close to agent");
-                    goto RandomTurret;
                 }
             }
 
