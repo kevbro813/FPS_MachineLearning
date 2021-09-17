@@ -15,6 +15,7 @@ public class Agent
     public int bufferIndex; // Keeps track of the current index of the buffer "Count"
     public int bufferCount; // Tracks the size of the buffer
     public bool isExploit = true; // Is the agent's action explore or exploit (will change the color of the agent to red if exploit and white if explore)
+    int randIndex;
     #endregion
 
     #region Initialization
@@ -45,6 +46,7 @@ public class Agent
         bufferIndex = 0;
         bufferCount = 0;
         actionQty = actQty;
+        randIndex = -1;
     }
     #endregion
 
@@ -123,17 +125,22 @@ public class Agent
 
         for (int i = 0; i < miniBatch.Length; i++) // Loop through the mini-batch tuple
         {
-            start:
-            int rand = UnityEngine.Random.Range(0, bufferCount); // Get a random buffer index to add to the mini-batch
+            GetRandomBatch(frameBufferIndex, framesPerState); // Recursive method to ensure the random frame used is valid (Not using the frames at the beginning and end of the buffer)
 
-            // Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
-            if (experienceBuffer[rand].Item1 > frameBufferIndex && experienceBuffer[rand].Item1 <= frameBufferIndex + framesPerState)
-            {
-                goto start; // Return to start and get a new random index
-            }
-            miniBatch[i] = experienceBuffer[rand]; // Add the random memory to the mini-batch
+            miniBatch[i] = experienceBuffer[randIndex]; // Add the random memory to the mini-batch
         }
         return miniBatch; // Return the completed mini-batch
+    }
+
+    void GetRandomBatch(int frameBufferIndex, int framesPerState)
+    {
+        randIndex = UnityEngine.Random.Range(0, bufferCount); // Get a random buffer index to add to the mini-batch
+
+        // Avoid using old/new frames together. Do not use frames from frameBufferIndex to (frameBufferIndex + framesPerState)
+        if (experienceBuffer[randIndex].Item1 > frameBufferIndex && experienceBuffer[randIndex].Item1 <= frameBufferIndex + framesPerState)
+        {
+            GetRandomBatch(frameBufferIndex, framesPerState);
+        }
     }
     #endregion
 

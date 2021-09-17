@@ -593,31 +593,10 @@ public class RLComponent : MonoBehaviour
             tf.position = RLManager.instance.spawnpoint.position; // Set spawn position
 
             //RandomTurret:
-            //RLManager.instance.UpdateTurretLocation();
-
-            //// Check if agent spawn is too close to the objective
-            //if (RLManager.instance.turretLocation.x < RLManager.instance.spawnpoint.position.x + 3 && RLManager.instance.turretLocation.x > RLManager.instance.spawnpoint.position.x - 3)
-            //{
-            //    if (RLManager.instance.turretLocation.z < RLManager.instance.spawnpoint.position.z + 3 && RLManager.instance.turretLocation.z > RLManager.instance.spawnpoint.position.z - 3)
-            //    {
-            //        Debug.Log("Respawn turret since it is too close to agent spawn");
-            //        goto RandomTurret;
-            //    }
-            //}
+            //PreventSpawnInAgentProximity();
 
             // Random Objective
-            RandomObjective:
-            RLManager.instance.UpdateObjectiveLocation();
-
-            // Check if agent spawn is too close to the objective
-            if (RLManager.instance.objectiveLocation.x < RLManager.instance.turretLocation.x + 3 && RLManager.instance.objectiveLocation.x > RLManager.instance.turretLocation.x - 3)
-            {
-                if (RLManager.instance.objectiveLocation.z < RLManager.instance.turretLocation.z + 3 && RLManager.instance.objectiveLocation.z > RLManager.instance.turretLocation.z - 3)
-                { 
-                    Debug.Log("Respawn objective since it is too close to turret");
-                   goto RandomObjective;
-                }
-            }
+            PreventSpawnInObjectiveProximity(); // Recursive method to prevent spawning the turret to close to the objective
 
             // Updates the average reward with the latest episode
             GameManager.instance.ui.UpdateEpisodeAverage(totalReward, episodeNum);
@@ -640,6 +619,34 @@ public class RLComponent : MonoBehaviour
         }
     }
 
+    void PreventSpawnInAgentProximity()
+    {
+        RLManager.instance.UpdateTurretLocation();
+
+        // Check if agent spawn is too close to the objective
+        if (RLManager.instance.turretLocation.x < RLManager.instance.spawnpoint.position.x + 3 && RLManager.instance.turretLocation.x > RLManager.instance.spawnpoint.position.x - 3)
+        {
+            if (RLManager.instance.turretLocation.z < RLManager.instance.spawnpoint.position.z + 3 && RLManager.instance.turretLocation.z > RLManager.instance.spawnpoint.position.z - 3)
+            {
+                Debug.Log("Respawn turret since it is too close to agent spawn");
+                PreventSpawnInAgentProximity();
+            }
+        }
+    }
+    void PreventSpawnInObjectiveProximity()
+    {
+        RLManager.instance.UpdateObjectiveLocation();
+
+        // Check if agent spawn is too close to the objective
+        if (RLManager.instance.objectiveLocation.x < RLManager.instance.turretLocation.x + 3 && RLManager.instance.objectiveLocation.x > RLManager.instance.turretLocation.x - 3)
+        {
+            if (RLManager.instance.objectiveLocation.z < RLManager.instance.turretLocation.z + 3 && RLManager.instance.objectiveLocation.z > RLManager.instance.turretLocation.z - 3)
+            {
+                Debug.Log("Respawn objective since it is too close to turret");
+                PreventSpawnInObjectiveProximity();
+            }
+        }
+    }
     private void ResetProjectiles()
     {
         if (turret.projectile_tf) Destroy(turret.projectile_tf.gameObject);
